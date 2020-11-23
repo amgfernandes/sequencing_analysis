@@ -2,7 +2,9 @@
 title: "Analysis of the RGC single-cell sequencing data"
 author: "Miguel Fernandes"
 date: "11/23/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -235,7 +237,7 @@ DimPlot(larva, group.by = c("orig.ident"))
 ```
 
 Violin. First check the batch correction (defined by using the group.by):
-```{r plot_umap_ident}
+```{r plot_violin_ident}
 VlnPlot(larva,features = "nCount_RNA", group.by = c("orig.ident"))
 ```
 
@@ -259,7 +261,7 @@ larva.markers <- FindAllMarkers(object = larva, only.pos = TRUE, min.pct = 0.25,
 
 Lets look on the top markers:
 ```{r markers}
-larva.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
+larva.markers %>% group_by(cluster) %>% top_n(n = 10,wt = avg_logFC)
 ```
 
 plot the expression of a chosen genes on the UMAP. elavl3 are differentiated neurons, while the others are progenitors markers:
@@ -269,7 +271,10 @@ FeaturePlot(object = larva, features = c("elavl3", "pcvna", "fabp7a", "her4.1"))
 
 We can use this data to subset the differentiated neurons and recluster them. 
 ```{r subset_neurons}
-larva<- subset(x = larva, idents=c("0", "1", "2", "3", "4","5", "10", "11", "14", "18", "22", "23"))
+#if only some clusters are neurons
+#larva.neurons<- subset(x = larva, idents=c("0", "1", "2", "3", "4","5", "10", "11", "14", "18", "22", "23"))
+
+larva.neurons <- larva
 ```
 
 ### Neurons analysis
@@ -281,21 +286,21 @@ sum(table(...=larva@active.ident))
 
 We will need to analyze the variable features for the new dataset and rerun the clustering analysis.
 ```{r analyze_neruons, message=FALSE, warning=FALSE}
-# varibale features
-larva <- FindVariableFeatures(object = larva, selection.method = "vst", nfeatures = 2000)
-#pca 
-larva <- RunPCA(object = larva, features = VariableFeatures(object = larva))
-#Run harmony
-larva <- RunHarmony(larva, group.by.vars = "orig.ident")
-#RunUMAP (object, reduction = "harmony", dims = 1:30)
-larva <- RunUMAP(larva, reduction = "harmony", dims = 1:30)
-larva <- FindNeighbors(larva, reduction = "harmony", dims = 1:30) 
-larva <- FindClusters(object = larva, resolution = 1.7)
+# # varibale features
+# larva <- FindVariableFeatures(object = larva, selection.method = "vst", nfeatures = 2000)
+# #pca 
+# larva <- RunPCA(object = larva, features = VariableFeatures(object = larva))
+# #Run harmony
+# larva <- RunHarmony(larva, group.by.vars = "orig.ident")
+# #RunUMAP (object, reduction = "harmony", dims = 1:30)
+# larva <- RunUMAP(larva, reduction = "harmony", dims = 1:30)
+# larva <- FindNeighbors(larva, reduction = "harmony", dims = 1:30) 
+# larva <- FindClusters(object = larva, resolution = 1.7)
 ```
 
 Visualize the results. Firts batch effects:
 ```{r}
-DimPlot(larva, group.by = c("orig.ident", "age"))
+DimPlot(larva, group.by = c("orig.ident"))
 ```
 
 Clusters:
@@ -306,10 +311,10 @@ DimPlot(object = (larva), label=TRUE)
 
 Find markers for every neuronal cluster compared to all remaining cells, report only the positive ones.
 ```{r message=FALSE, warning=FALSE}
-harmony.neurons.markers.no.iegs <- FindAllMarkers(object = larva, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.8)
+larva.neurons <- FindAllMarkers(object = larva.neurons, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.8)
 ```
 ```{r}
-harmony.neurons.markers.no.iegs %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
+larva.neurons %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
 ```
 
 Lets look on the neurotransmiters expression:
