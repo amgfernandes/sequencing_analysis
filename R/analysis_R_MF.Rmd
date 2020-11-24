@@ -1,6 +1,7 @@
 ---
 title: "Analysis of the RGC single-cell sequencing data"
 author: "Miguel Fernandes"
+notes: "Some functions are based on Inbal and Harvard scripts"
 date: "11/23/2020"
 output:
   html_document: default
@@ -48,7 +49,7 @@ remove_genes <- function(dgc_mat, gene_list) {
 Let's load our IEGs curated list:
 
 ```{r, load_IEGs_list}
-IEGs<- readLines("~/desktop/ZebrafishRGC_data/IEG list.csv")
+IEGs<- readLines("~/zfish_RGC_atlas/IEG list.csv")
 ```
 
 ### Load the data
@@ -57,7 +58,7 @@ We will load our data from the 10x matrix files. Then we'll remove the IEGs, cre
 
 ```{r load_data, message=FALSE, warning=FALSE}
 # load the 10x data:
-larva.7dpf.data<- readRDS("~/desktop/ZebrafishRGC_data/larva_zFish_FINAL.rds")
+larva.7dpf.data<- readRDS("~/zfish_RGC_atlas/larva_zFish_FINAL.rds")
 
 # Remove ZfishRGC17 due to wetting sample failure
 cells.remove = grep("ZfishRGC17_",colnames(larva.7dpf.data), value=TRUE)
@@ -99,7 +100,7 @@ head(larva@meta.data)
 Repeat for the adult data
 ```{r rest_of objects, message=FALSE, warning=FALSE}
 # load the 10x data:
-adult.7dpf.data<- readRDS("~/desktop/ZebrafishRGC_data/adult_zFish_FINAL.rds")
+adult.7dpf.data<- readRDS("~/zfish_RGC_atlas/adult_zFish_FINAL.rds")
 
 # Remove ZfishRGC17 due to wetting sample failure
 cells.remove = grep("ZfishRGC17_",colnames(adult.7dpf.data), value=TRUE)
@@ -142,27 +143,40 @@ Removal of bad quality cells:
 
 We first calculate mitochondrial QC metrics with the PercentageFeatureSet function, 
 which calculates the percentage of counts originating from a set of features. Mitochndrial genes have the prefix 'mt-', which is used to identify them.
-```{r percent.mt}
+```{r larva percent.mt}
 larva[["percent.mt"]] <- PercentageFeatureSet(object = larva, pattern = "^mt-")
 ```
 
 Lets visualize QC metrics as a violin plot (the features are the genes, the count is the number of UMIs).The visualization is according to the batch, which also help us to observe batch quality differences. 
-```{r vln_plot}
+```{r larva vln_plot}
 VlnPlot(object = larva, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, pt.size=1)
 ```
+```{r adult percent.mt}
+adult[["percent.mt"]] <- PercentageFeatureSet(object = adult, pattern = "^mt-")
+```
 
-We'll now filter out the cells with unusual number of genes (nFeature_RNA), precent.mt and UMI (nCount_RNA). What is unusual? No ground truth role here. It can vary with the tissue examined, the efficiency the 10x or the sequencing machine. We can examine the violin plot and get a feeling of the outliers in our data. Additionally for mitochondrial genes, the avg. in neurons is about 12.5%, so I would set the bat higher to capture most of the population variance. The most important part here is to check how the downstream analysis looks like, and return and refine the threshold set here. For example, if in the downstream analysis mitochondrial genes are highly present in the variable genes, the bar was set too high. If some cells have marker genes of two different cluster, maybe there are a lot od duplets in the data and the threshold for gene number and UMI should be lower. 
+```{r adult vln_plot}
+VlnPlot(object = adult, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, pt.size=1)
+```
+We'll now filter out the cells with unusual number of genes (nFeature_RNA), precent.mt and UMI (nCount_RNA). What is unusual? No ground truth role here. It can vary with the tissue examined, the efficiency the 10x or the sequencing machine. We can examine the violin plot and get a feeling of the outliers in our data. Additionally for mitochondrial genes, the avg. in neurons is about 12.5%, so I maybe the threshold should be higher to capture most of the population variance. The most important part is to check how the downstream analysis looks like, and return and refine the threshold set here. For example, if in the downstream analysis mitochondrial genes are highly present in the variable genes, the bar was set too high. If some cells have marker genes of two different cluster, maybe there are a lot duplets in the data and the threshold for gene number and UMI should be lower. 
 
 The subset command is used to keep the cells with certain characteristics:
-```{r subset}
+```{r larva subset}
 larva <- subset(x = larva, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mt < 20 & nCount_RNA < 6000)
 ```
 
 How many cells have past the threshold and will be used for the down stream analysis:
-```{r}
+```{r larva}
 sum(table(...=larva@active.ident))
 ```
 
+```{r adult subset}
+adult <- subset(x = adult, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mt < 20 & nCount_RNA < 6000)
+```
+
+```{r adult}
+sum(table(...=adult@active.ident))
+```
 ### preprocessing
 
 We will now normalize and scale the data. 
@@ -170,49 +184,72 @@ Normalize the data by a global-scaling normalization method.
 LogNormalize: Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. This is then natural-log transformed using log1p.
 More normalization methods can be used (CLR and Relative counts). Check the function help for more information. 
 
-```{r normalization}
+```{r normalization larva}
 larva <- NormalizeData(object = larva, 
                                   normalization.method = "LogNormalize", 
                                   scale.factor = 10000)
 ```
-
+```{r normalization}
+adult <- NormalizeData(object = adult, 
+                                  normalization.method = "LogNormalize", 
+                                  scale.factor = 10000)
+```
 Identification of highly variable features (feature selection). Identifies features that are outliers on a 'mean variability plot'.The default- 2,000 features per dataset. 
 vst: First, fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the feature values using the observed mean and expected variance (given by the fitted line). Feature variance is then calculated on the standardized values after clipping to a maximum (see clip.max parameter).
 
-```{r variable features}
+```{r variable features larva}
 larva <- FindVariableFeatures(object = larva, 
                                          selection.method = "vst", 
                                          nfeatures = 2000)
 ```
-
+```{r variable features}
+adult <- FindVariableFeatures(object = adult, 
+                                         selection.method = "vst", 
+                                         nfeatures = 2000)
+```
 Scaling the data:
 Apply a linear transformation (‘scaling’) that is a standard pre-processing step prior to dimensional reduction. The ScaleData function:
 Shifts the expression of each gene, so that the mean expression across cells is 0
 Scales the expression of each gene, so that the variance across cells is 1
 This step gives equal weight in downstream analyses, so that highly-expressed genes do not dominate
-The results of this are stored in combined.harmony[["RNA"]]@scale.data
+The results of this are stored in larva[["RNA"]]@scale.data
 
-```{r scaledata}
-all.genes.no.iegs <- rownames(x = larva)
-larva<- ScaleData(object =larva, features = all.genes.no.iegs)
+```{r scaledata larva}
+all.genes.no.iegs.larva <- rownames(x = larva)
+larva<- ScaleData(object =larva, features = all.genes.no.iegs.larva)
 
 ```
+```{r scaledata}
+all.genes.no.iegs.adult <- rownames(x = adult)
+adult<- ScaleData(object =adult, features = all.genes.no.iegs.adult)
 
+```
 ### Principle component anaysis
 
 Perform linear dimensional reduction (PCA on scaled data).
 By default, only the previously determined variable features are used as input, 
 but can be defined using features argument if you wish to choose a different subset.
 
-```{r pca}
+```{r pca larva}
 larva <- RunPCA(object = larva, features = VariableFeatures(object = larva))
 ```
+```{r pca}
+adult <- RunPCA(object = adult, features = VariableFeatures(object = adult))
+```
+
 
 ### Batch correction
 
-I use Harmony for batch correction. I have tried a couple other methods (Liger, fastMNN) and Harmony was superior to them. In their paper (<https://www.nature.com/articles/s41592-019-0619-0>) the describe the method as: "an algorithm that projects cells into a shared embedding in which cells group by cell type rather than dataset-specific conditions". The batches are refered by the "orig.ident", which we set in the add.cell.ids when generating the merged suerat object. 
+I use Harmony for batch correction. In the paper (<https://www.nature.com/articles/s41592-019-0619-0>) they describe the method as: "an algorithm that projects cells into a shared embedding in which cells group by cell type rather than dataset-specific conditions". The batches are refered by the "orig.ident", which we set in the add.cell.ids when generating the merged suerat object. 
 ```{r harmony}
-larva <- RunHarmony(larva, group.by.vars = "orig.ident")
+larva.corrected <- RunHarmony(larva, group.by.vars = "orig.ident")
+```
+```{r adult harmony}
+adult.corrected <- RunHarmony(adult, group.by.vars = "orig.ident")
+```
+
+```{r ElbowPlot }
+ElbowPlot(adult.corrected, ndims = 40)
 ```
 
 ### Clustering and non-linear dimensional reduction
@@ -222,51 +259,150 @@ Explanation from the Seurat website:
 To cluster the cells, we next apply modularity optimization techniques such as the Louvain algorithm (default) or SLM [SLM, Blondel et al., Journal of Statistical Mechanics], to iteratively group cells together, with the goal of optimizing the standard modularity function. The FindClusters function implements this procedure, and contains a resolution parameter that sets the 'granularity' of the downstream clustering, with increased values leading to a greater number of clusters. We find that setting this parameter between 0.4-1.2 typically returns good results for single-cell datasets of around 3K cells. Optimal resolution often increases for larger datasets. The clusters can be found using the Idents function".
 
 The dims define the number of PCs used. The reduction takes the batch corrected data from Harmony.
+```{r UMAP larva}
+larva<- RunUMAP(larva, dims = 1:30)
+larva.corrected<- RunUMAP(larva.corrected, reduction = "harmony", dims = 1:30) 
+```
 ```{r UMAP}
-larva<- RunUMAP(larva, reduction = "harmony", dims = 1:30) 
+adult<- RunUMAP(adult, dims = 1:30) 
+adult.corrected<- RunUMAP(adult.corrected, reduction = "harmony", dims = 1:30) 
 ```
 
-```{r clsuters}
-larva <- FindNeighbors(larva, reduction = "harmony", dims = 1:30) 
+```{r clusters larva}
+
+larva<- FindNeighbors(larva, dims = 1:30) 
 larva <- FindClusters(object = larva, resolution = 1.2)
+larva.corrected<- FindNeighbors(larva.corrected, reduction = "harmony", dims = 1:30) 
+larva.corrected <- FindClusters(object = larva.corrected, resolution = 1.2)
+```
+```{r clsuters}
+
+adult<- FindNeighbors(adult, dims = 1:30) 
+adult <- FindClusters(object = adult, resolution = 1.2)
+adult.corrected<- FindNeighbors(adult.corrected, reduction = "harmony", dims = 1:30) 
+adult.corrected <- FindClusters(object = adult.corrected, resolution = 1.2)
+```
+Visualize the UMAP. First check the batch correction (defined by using the group.by):
+```{r plot_umap_ident larva}
+DimPlot(larva, group.by = c("orig.ident"))
+```
+```{r plot_umap_ident corrected larva}
+DimPlot(larva.corrected, group.by = c("orig.ident"))
+```
+```{r plot_umap_ident}
+DimPlot(adult, group.by = c("orig.ident"))
 ```
 
-Visualize the UMAP. First check the batch correction (defined by using the group.by):
-```{r plot_umap_ident}
-DimPlot(larva, group.by = c("orig.ident"))
+```{r plot_umap_ident corrected}
+DimPlot(adult.corrected, group.by = c("orig.ident"))
+```
+```{r dotplot_ident larva}
+sample_features = c("eomesa", "tbr1b", "mafaa", "neurod1")
+DotPlot(larva.corrected, features = sample_features) + RotatedAxis() + ggtitle("Sample Dot Plot")
+```
+
+
+```{r dotplot_ident}
+sample_features = c("eomesa", "tbr1b", "mafaa", "neurod1")
+DotPlot(adult.corrected, features = sample_features) + RotatedAxis() + ggtitle("Sample Dot Plot")
+```
+```{r eomesa check larva}
+FeaturePlot(larva.corrected, reduction = "umap", label = TRUE, features = "eomesa")
+```
+
+```{r eomesa check}
+FeaturePlot(adult.corrected, reduction = "umap", label = TRUE, features = "eomesa")
 ```
 
 Violin. First check the batch correction (defined by using the group.by):
-```{r plot_violin_ident}
-VlnPlot(larva,features = "nCount_RNA", group.by = c("orig.ident"))
+```{r plot_violin_ident larva}
+VlnPlot(larva.corrected,features = "nCount_RNA", group.by = c("orig.ident"))
 ```
 
+```{r feature}
+FeaturePlot(adult.corrected, reduction = "umap", features = c("eomesa", "tbr1b", "mafaa", "neurod2"))
+```
 
 And now the unique cell types:
-```{r plot_umap_cluster}
-DimPlot(object = (larva), label=TRUE)
+```{r plot_umap_cluster larva}
+DimPlot(object = (larva.corrected), label=TRUE)
 ```
+```{r plot_umap_cluster}
+DimPlot(object = (adult.corrected), label=TRUE)
+```
+```{r find_features larva, message=FALSE, warning=FALSE}
+larva.markers <- FindAllMarkers(object = larva.corrected, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+```
+
+```{r top 3 DE genes from each cluster for plotting larva}
+DEGenes_vector <- vector()
+for (i in levels(Idents(larva.corrected))) {
+    DEGenes_vector = union(DEGenes_vector, head(subset(larva.markers, 
+        cluster == i))[1:3, ]$gene)
+}
+DEGenes_vector = tolower(DEGenes_vector[2:length(DEGenes_vector)])
+
+
+# Plot DE genes
+DotPlot(larva.corrected, features = DEGenes_vector) + RotatedAxis()
+```
+```{r find_features adult, message=FALSE, warning=FALSE}
+adult.markers <- FindAllMarkers(object = adult.corrected, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+```
+
+
+```{r top 3 DE genes from each cluster for plotting}
+DEGenes_vector <- vector()
+for (i in levels(Idents(adult.corrected))) {
+    DEGenes_vector = union(DEGenes_vector, head(subset(adult.markers, 
+        cluster == i))[1:3, ]$gene)
+}
+DEGenes_vector = tolower(DEGenes_vector[2:length(DEGenes_vector)])
+
+
+# Plot DE genes
+DotPlot(adult.corrected, features = DEGenes_vector) + RotatedAxis()
+```
+
+```{r function cluster size larva}
+#' Plots the relative cluster size of each cluster in an object
+#'
+#' @param A Seurat object
+PlotClusterSize = function(object){
+  num_cells <- dim(object@meta.data)[1]
+  cluster_percent <- vector()
+  for(i in levels(object@meta.data$clusterID)){
+    clus_cells <- length(which(object@meta.data$clusterID == i))
+    cluster_percent[i] <- clus_cells / num_cells * 100
+  }
+  barplot(cluster_percent, xlab = "Cluster ID", ylab = "Percentage of Cells [%]")
+}
+```
+
+```{r clusters size adult}
+# Plot relative size of each cluster
+PlotClusterSize(adult.corrected)
+```
+
 
 ### Finding differentially expressed features
 
 Find markers for every cluster compared to all remaining cells. From seurat webpage:
 "The min.pct argument requires a feature to be detected at a minimum percentage in either of the two groups of cells, and the thresh.test argument requires a feature to be differentially expressed (on average) by some amount between the two groups. You can set both of these to 0, but with a dramatic increase in time - since this will test a large number of features that are unlikely to be highly discriminatory. As another option to speed up these computations, max.cells.per.ident can be set. This will downsample each identity class to have no more cells than whatever this is set to. While there is generally going to be a loss in power, the speed increases can be significiant and the most highly differentially expressed features will likely still rise to the top".
 
-To idetify the which kind of cells are in each cluster I define the setting to report only the positive markers, the marker has to be expressed in at least 25% of the cells in the cluster and to have a 
+To identify the which kind of cells are in each cluster I define the setting to report only the positive markers, the marker has to be expressed in at least 25% of the cells in the cluster and to have a 
 log fold expression of at least 0.8.
 
-```{r find_features, message=FALSE, warning=FALSE}
-larva.markers <- FindAllMarkers(object = larva, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.8)
-```
+
 
 Lets look on the top markers:
 ```{r markers}
-larva.markers %>% group_by(cluster) %>% top_n(n = 10,wt = avg_logFC)
+adult.markers %>% group_by(cluster) %>% top_n(n = 10,wt = avg_logFC)
 ```
 
 plot the expression of a chosen genes on the UMAP. elavl3 are differentiated neurons, while the others are progenitors markers:
 ```{r feature_plot}
-FeaturePlot(object = larva, features = c("elavl3", "pcvna", "fabp7a", "her4.1"))
+FeaturePlot(object = adult.corrected, features = c("elavl3", "pcvna", "fabp7a", "her4.1"))
 ```
 
 We can use this data to subset the differentiated neurons and recluster them. 
@@ -274,52 +410,20 @@ We can use this data to subset the differentiated neurons and recluster them.
 #if only some clusters are neurons
 #larva.neurons<- subset(x = larva, idents=c("0", "1", "2", "3", "4","5", "10", "11", "14", "18", "22", "23"))
 
-larva.neurons <- larva
+adult.neurons <- adult.corrected
 ```
 
 ### Neurons analysis
 
 how many neurons do we have:
 ```{r}
-sum(table(...=larva@active.ident))
+sum(table(...=adult.neurons@active.ident))
 ```
 
-We will need to analyze the variable features for the new dataset and rerun the clustering analysis.
-```{r analyze_neruons, message=FALSE, warning=FALSE}
-# # varibale features
-# larva <- FindVariableFeatures(object = larva, selection.method = "vst", nfeatures = 2000)
-# #pca 
-# larva <- RunPCA(object = larva, features = VariableFeatures(object = larva))
-# #Run harmony
-# larva <- RunHarmony(larva, group.by.vars = "orig.ident")
-# #RunUMAP (object, reduction = "harmony", dims = 1:30)
-# larva <- RunUMAP(larva, reduction = "harmony", dims = 1:30)
-# larva <- FindNeighbors(larva, reduction = "harmony", dims = 1:30) 
-# larva <- FindClusters(object = larva, resolution = 1.7)
-```
-
-Visualize the results. Firts batch effects:
-```{r}
-DimPlot(larva, group.by = c("orig.ident"))
-```
-
-Clusters:
-
-```{r}
-DimPlot(object = (larva), label=TRUE)
-```
-
-Find markers for every neuronal cluster compared to all remaining cells, report only the positive ones.
-```{r message=FALSE, warning=FALSE}
-larva.neurons <- FindAllMarkers(object = larva.neurons, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.8)
-```
-```{r}
-larva.neurons %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
-```
 
 Lets look on the neurotransmiters expression:
 ```{r}
-FeaturePlot(object = larva,features = c("gad2", "gad1b", "slc6a1b", "chata", "slc17a6a", "slc17a6b", "slc17a7a", "slc6a5", "slc6a9"))
+FeaturePlot(object = larva.corrected,features = c("gad2", "gad1b", "slc6a1b", "chata", "slc17a6a", "slc17a6b", "slc17a7a", "slc6a5", "slc6a9"))
 ```
 
 We can use this data to recluster only the inhibitory or the excitatory neurons etc. 
