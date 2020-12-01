@@ -285,7 +285,7 @@ sc.pp.regress_out(adata, ['total_counts', 'pct_counts_mt'])
 
 
 #Scale each gene to unit variance. Clip values exceeding standard deviation 10
-sc.pp.scale(adata, max_value=10)
+sc.pp.scale(adata, max_value=9)
 
 
 # In[34]:
