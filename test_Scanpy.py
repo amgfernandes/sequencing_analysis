@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
 import numpy as np
@@ -12,7 +12,7 @@ import scanpy.external as sce
 from matplotlib import rcParams
 
 
-# In[3]:
+# In[2]:
 
 
 sc.settings.verbosity = 3             # verbosity: errors (0), warnings (1), info (2), hints (3)
@@ -20,279 +20,328 @@ sc.logging.print_header()
 sc.settings.set_figure_params(dpi=80, facecolor='white')
 
 
+# In[3]:
+
+
+results_file = '/Users/fernandes/Desktop/sample scseq data/scanpy_test.h5ad'  # the file that will store the analysis results
+
+
+# #### Read in the count matrix into an `AnnData <https://anndata.readthedocs.io/en/latest/anndata.AnnData.html>`__ object, which holds many slots for annotations and different representations of the data. It also comes with its own HDF5 file format: .h5ad.
+
 # In[4]:
 
 
-results_file = 'D:/scRNA-seq_demo_data/test.h5ad'  # the file that will store the analysis results
+IEG_list=pd.read_csv('/Users/fernandes/Desktop/sample scseq data/IEG_list.csv', header=None)
+IEG_list.columns=['gene']
+IEG_list.gene.values
 
-
-# #### Read in2 the count matrix into an `AnnData <https://anndata.readthedocs.io/en/latest/anndata.AnnData.html>`__ object, which holds many slots for annotations and different representations of the data. It also comes with its own HDF5 file format: .h5ad.
 
 # In[5]:
 
 
+def return_indices_of_a(a, b):
+    b_set = set(b)
+    return [i for i, v in enumerate(a) if v not in b_set]
+
+def remove_genes(dgc_mat, gene_list):
+#Function receives a  gene matrix and a list of genes and returns a  gene matrix without the gene rows.
+#The loaded 10x data is a dgc matrix.
+  
+    idx=return_indices_of_a(dgc_mat.var_names,gene_list.gene.values)
+    dgc_mat_corr= dgc_mat[:,idx] 
+  
+    return (dgc_mat_corr)
+
+
+# In[262]:
+
+
 adata1 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_1/',  # the directory with the `.mtx` file
+    '/Users/fernandes/Desktop/sample scseq data/sample1_7dpf/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
 adata1.obs['batch']='1'
+adata1=remove_genes(adata1, IEG_list)
 
 
-# In[6]:
+# In[263]:
 
 
 adata2 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_2/',  # the directory with the `.mtx` file
+    '/Users/fernandes/Desktop/sample scseq data/sample2_7dpf/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
 adata2.obs['batch']='2'
+adata2=remove_genes(adata2, IEG_list)
 
 
-# In[7]:
+# In[264]:
 
 
 adata3 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_3/',  # the directory with the `.mtx` file
+    '/Users/fernandes/Desktop/sample scseq data/sample3_7dpf/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
 adata3.obs['batch']='3'
+adata3=remove_genes(adata3, IEG_list)
 
 
-# In[8]:
+# In[265]:
 
 
 adata4 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_4/',  # the directory with the `.mtx` file
+    '/Users/fernandes/Desktop/sample scseq data/sample4_7dpf/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
 adata4.obs['batch']='4'
+adata4=remove_genes(adata4, IEG_list)
 
 
-# In[9]:
+# ### Sample 5 was low quality. Not used
 
-
-adata5 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_5/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata5.obs['batch']='5'
-
-
-# In[10]:
+# In[266]:
 
 
 adata6 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_6/',  # the directory with the `.mtx` file
+    '/Users/fernandes/Desktop/sample scseq data/sample6_6dpf/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
 adata6.obs['batch']='6'
+adata6=remove_genes(adata6, IEG_list)
 
 
-# In[11]:
+# In[267]:
 
 
 adata7 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_7/',  # the directory with the `.mtx` file
+    '/Users/fernandes/Desktop/sample scseq data/sample7_6dpf/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
 adata7.obs['batch']='7'
+adata7=remove_genes(adata7, IEG_list)
 
 
-# In[12]:
+# In[268]:
 
 
 adata8 = sc.read_10x_mtx(
-    'D:/scRNA-seq_demo_data/sample_8/',  # the directory with the `.mtx` file
+    '/Users/fernandes/Desktop/sample scseq data/sample8_6dpf/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
 adata8.obs['batch']='8'
+adata8=remove_genes(adata8, IEG_list)
 
 
-# In[13]:
+# In[269]:
 
 
-adata1.obs['batch']
+adata9 = sc.read_10x_mtx(
+    '/Users/fernandes/Desktop/sample scseq data/sample9_7dpf/',  # the directory with the `.mtx` file
+    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
+    cache=True)                          # write a cache file for faster subsequent reading
+adata9.obs['batch']='9'
+adata9=remove_genes(adata9, IEG_list)
+adata9
 
 
-# In[14]:
+# In[270]:
 
 
-adata2.obs['batch']
+adata4.obs['batch']
 
 
-# In[15]:
+# In[271]:
 
 
-adata =adata1.concatenate(adata2, adata3, adata4, adata5, adata6, adata7, adata8)
+adata =adata1.concatenate(adata2,adata3, adata4, adata6, adata7, adata8, adata9)
 
 
-# In[16]:
+# In[272]:
 
 
-'''#Harmony works by adjusting the principal components, this function should be run after performing PCA but before computing the neighbor graph,'''
-sc.tl.pca(adata) 
+'''remove not used objects'''
+del (adata1,adata2,adata3, adata4, adata6, adata7, adata8, adata9)
 
 
-# In[17]:
+# # Preprocessing
+# Show those genes that yield the highest fraction of counts in each single cells, across all cells.
 
-
-sce.pp.harmony_integrate(adata, 'batch') #correct batch effect
-
-
-# In[18]:
-
-
-'X_pca_harmony' in adata.obsm
-
-
-# In[20]:
-
-
-adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
-
-
-# In[59]:
-
-
-rcParams['figure.figsize'] = 10, 10
-sc.pl.umap( adata, color=['batch'])
-
-
-# In[21]:
-
-
-adata
-
-
-# In[22]:
+# In[273]:
 
 
 sc.pl.highest_expr_genes(adata, n_top=20, )
 
 
-# In[23]:
+# #### Basic filtering
+
+# In[248]:
 
 
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=3)
 
 
-# In[24]:
+# In[249]:
 
 
 adata.var['mt'] = adata.var_names.str.startswith('mt')  # annotate the group of mitochondrial genes as 'mt'
 sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
 
 
-# In[25]:
+# In[250]:
 
 
-sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
-             jitter=0.4, multi_panel=True)
+sc.pl.violin(adata, ['n_genes_by_counts'],
+             jitter=0.3, multi_panel=False)
 
 
-# In[26]:
+# In[251]:
+
+
+sc.pl.violin(adata, ['total_counts'],
+             jitter=0.3, multi_panel=False)
+
+
+# In[252]:
+
+
+sc.pl.violin(adata, ['pct_counts_mt'],
+             jitter=0.3, multi_panel=False)
+
+
+# In[253]:
 
 
 sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt')
 sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts')
 
 
-# In[27]:
+# In[254]:
 
 
-adata = adata[adata.obs.n_genes_by_counts < 2500, :]
+adata = adata[adata.obs.n_genes_by_counts < 3000, :]
 adata = adata[adata.obs.pct_counts_mt < 5, :]
 
 
-# In[28]:
+# ### Total-count normalize (library-size correct) the data matrix 𝐗 to 10,000 reads per cell, so that counts become comparable among cells.
+
+# In[255]:
 
 
-sc.pp.normalize_total(adata, target_sum=1e4)
+sc.pp.normalize_total(adata, target_sum=10000)
 
 
-# In[29]:
+# ### Logarithmize the data.
+
+# In[256]:
 
 
 sc.pp.log1p(adata)
 
 
-# In[30]:
-
-
-sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
-
-
-# In[31]:
-
-
-sc.pl.highly_variable_genes(adata)
-
-
-# In[32]:
-
-
-adata.raw = adata
-
-
-# In[33]:
-
-
-adata = adata[:, adata.var.highly_variable]
-
-
-# In[34]:
-
-
-adata
-
-
-# In[35]:
-
-
-sc.pp.regress_out(adata, ['total_counts', 'pct_counts_mt'])
-
-
-# In[36]:
+# In[257]:
 
 
 sc.pp.scale(adata, max_value=10)
 
 
-# In[37]:
+# ### Identify highly-variable genes.
+
+# In[261]:
 
 
-sc.tl.pca(adata, svd_solver='arpack')
+sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
 
 
-# In[38]:
+# In[259]:
 
 
-sc.pl.pca(adata, color='rpl39')
+sc.pl.highly_variable_genes(adata)
 
 
-# In[39]:
+# ### Set the .raw attribute of AnnData object to the normalized and logarithmized raw gene expression for later use in differential testing and visualizations of gene expression. This simply freezes the state of the AnnData object.
+
+# In[30]:
+
+
+adata.raw = adata
+
+
+# In[31]:
+
+
+# filter
+adata = adata[:, adata.var.highly_variable]
+
+
+# In[32]:
+
+
+#Regress out effects of total counts per cell and the percentage of mitochondrial genes expressed. Scale the data to unit variance.
+sc.pp.regress_out(adata, ['total_counts', 'pct_counts_mt'])
+
+
+# In[33]:
+
+
+#Scale each gene to unit variance. Clip values exceeding standard deviation 10
+sc.pp.scale(adata, max_value=10)
+
+
+# In[34]:
+
+
+'''#Harmony works by adjusting the principal components, this function should be run after performing PCA but before computing the neighbor graph,'''
+sc.tl.pca(adata,svd_solver='arpack') 
+
+
+# In[35]:
 
 
 sc.pl.pca_variance_ratio(adata, log=True)
 
 
+# In[36]:
+
+
+adata_corr=adata.copy()
+
+
+# In[37]:
+
+
+sce.pp.harmony_integrate(adata_corr, 'batch')#correct batch effect
+
+
+# In[38]:
+
+
+'X_pca_harmony' in adata_corr.obsm
+
+
+# In[39]:
+
+
+adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
+adata_corr.var_names_make_unique()
+
+
 # In[40]:
 
 
-adata.write(results_file)
+sc.pp.neighbors(adata_corr, n_neighbors=10, n_pcs=40)
 
 
 # In[41]:
 
 
-adata
+sc.pp.neighbors(adata, n_neighbors=10, n_pcs=40)
 
 
 # In[42]:
 
 
-sc.pp.neighbors(adata, n_neighbors=10, n_pcs=40)
+sc.tl.umap(adata_corr)
 
 
 # In[43]:
@@ -304,214 +353,57 @@ sc.tl.umap(adata)
 # In[44]:
 
 
-sc.pl.umap(adata, color=['rpl39', 'stmn1b', 'hsp70l'])
+#rcParams['figure.figsize'] = 5, 5
+sc.pl.umap(adata, color=['batch'])
 
 
 # In[45]:
 
 
-sc.pl.umap(adata, color=['rpl39', 'stmn1b', 'hsp70l'], use_raw=True)
+#rcParams['figure.figsize'] = 5, 5
+sc.pl.umap(adata_corr, color=['batch'])
 
 
 # In[46]:
 
 
-sc.tl.leiden(adata)
+adata_corr.write(results_file)
 
 
-# In[61]:
+# In[47]:
 
 
-rcParams['figure.figsize'] = 10,10
-sc.pl.umap(adata, color=['leiden', 'stmn1b', 'hsp70l'])
-
-
-# In[63]:
-
-
-rcParams['figure.figsize'] = 10,10
-sc.pl.umap(adata, color='leiden')
+adata_corr
 
 
 # In[48]:
 
 
-adata.write(results_file)
+adata_corr.var_names
 
 
-# In[49]:
+# In[55]:
 
 
-sc.tl.rank_genes_groups(adata, 'leiden', method='t-test')
-sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False)
+sc.pl.umap(adata_corr, color=['rplp1', 'stmn1b', 'rps20'])
 
 
 # In[50]:
 
 
-sc.settings.verbosity = 2  # reduce the verbosity
+sc.tl.leiden(adata_corr)
 
 
-# In[51]:
+# In[58]:
 
 
-sc.tl.rank_genes_groups(adata, 'leiden', method='wilcoxon')
-sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False)
+rcParams['figure.figsize'] = 10,10
+sc.pl.umap(adata_corr, color=['leiden','rplp1', 'stmn1b', 'rps20'])
 
 
-# In[52]:
+# In[59]:
 
 
-adata.write(results_file)
-
-
-# In[53]:
-
-
-sc.tl.rank_genes_groups(adata, 'leiden', method='logreg')
-sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+rcParams['figure.figsize'] = 5,5
+sc.pl.umap(adata_corr, color='leiden')
 
