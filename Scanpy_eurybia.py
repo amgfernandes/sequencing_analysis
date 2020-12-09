@@ -10,6 +10,7 @@ import scanpy as sc
 import matplotlib.pyplot as plt
 import scanpy.external as sce
 from matplotlib import rcParams
+from helper_sequencing import Sequencing
 
 
 # In[2]:
@@ -36,32 +37,34 @@ IEG_list.columns=['gene']
 IEG_list.gene.values
 
 
-# In[5]:
-
-
-def return_indices_of_a(a, b):
-    b_set = set(b)
-    return [i for i, v in enumerate(a) if v not in b_set]
-
-def remove_genes(dgc_mat, gene_list):
-#Function receives a  gene matrix and a list of genes and returns a  gene matrix without the gene rows.
-#The loaded 10x data is a dgc matrix.
-  
-    idx=return_indices_of_a(dgc_mat.var_names,gene_list.gene.values)
-    dgc_mat_corr= dgc_mat[:,idx] 
-  
-    return (dgc_mat_corr)
 
 
 # In[262]:
 
 
-adata1 = sc.read_10x_mtx(
+adata = sc.read_10x_mtx(
     '/home/fernandes/sample_data/sample_1/',  # the directory with the `.mtx` file
     var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
     cache=True)                          # write a cache file for faster subsequent reading
-adata1.obs['batch']='1'
-adata1=remove_genes(adata1, IEG_list)
+adata.obs['batch']='1'
+
+seq_helper=Sequencing(seqdata=adata)
+
+adata1=seq_helper.remove_gene_list(adata, IEG_list)
+
+
+# In[262]:
+adata = sc.read_10x_mtx(
+    '/home/fernandes/sample_data/sample_1/',  # the directory with the `.mtx` file
+    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
+    cache=True)                          # write a cache file for faster subsequent reading
+adata.obs['batch']='1'
+
+seq_helper=Sequencing(seqdata=adata)
+
+adatatest=seq_helper.keep_gene_list(adata, IEG_list)
+# In[]:
+adata1
 
 
 # In[263]:
