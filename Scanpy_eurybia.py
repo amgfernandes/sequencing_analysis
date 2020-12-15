@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# %%:
 
 
+from anndata._core.aligned_mapping import I
 import numpy as np
 import pandas as pd
 import scanpy as sc
@@ -11,9 +12,10 @@ import matplotlib.pyplot as plt
 import scanpy.external as sce
 from matplotlib import rcParams
 from helper_sequencing import Sequencing
+from helper_sequencing import load_samples
 
 
-# In[2]:
+# %%:
 
 
 sc.settings.verbosity = 3             # verbosity: errors (0), warnings (1), info (2), hints (3)
@@ -21,7 +23,7 @@ sc.logging.print_header()
 sc.settings.set_figure_params(dpi=80, facecolor='white')
 
 
-# In[3]:
+# %%:
 
 
 results_file = '/home/fernandes/sample_data/scanpy_test.h5ad'  # the file that will store the analysis results
@@ -37,133 +39,28 @@ IEG_list.columns=['gene']
 IEG_list.gene.values
 
 
+# In[5]:
 
 
-# In[262]:
+# In[6]:
+data_list=["sample_1","sample_2","sample_3", "sample_4","sample_5","sample_6","sample_7","sample_8","sample_9"]
+seq_data=load_samples(load_method=sc.read_10x_mtx,samplelist=data_list)
+seq_helper=Sequencing(seqdata=seq_data)
 
+seq_data_filtered=seq_helper.remove_gene_list(seq_data,IEG_list)
 
-adata = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_1/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata.obs['batch']='1'
+#%%
+import itertools as it
+'''iterate over all elements on list of samples and concatenate them...only keep last result'''
+adata=list(it.accumulate(seq_data_filtered, sc.AnnData.concatenate))[-1]
 
-seq_helper=Sequencing(seqdata=adata)
-
-adata1=seq_helper.remove_gene_list(adata, IEG_list)
-
-
-# In[262]:
-adata = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_1/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata.obs['batch']='1'
-
-seq_helper=Sequencing(seqdata=adata)
-
-adatatest=seq_helper.keep_gene_list(adata, IEG_list)
-# In[]:
-adata1
-
-
-# In[263]:
-
-
-adata2 = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_2/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata2.obs['batch']='2'
-adata2=remove_genes(adata2, IEG_list)
-
-
-# In[264]:
-
-
-adata3 = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_3/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata3.obs['batch']='3'
-adata3=remove_genes(adata3, IEG_list)
-
-
-# In[265]:
-
-
-adata4 = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_4/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata4.obs['batch']='4'
-adata4=remove_genes(adata4, IEG_list)
-
-
-# ### Sample 5 was low quality. Not used
-
-# In[266]:
-
-
-adata6 = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_6/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata6.obs['batch']='6'
-adata6=remove_genes(adata6, IEG_list)
-
-
-# In[267]:
-
-
-adata7 = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_7/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata7.obs['batch']='7'
-adata7=remove_genes(adata7, IEG_list)
-
-
-# In[268]:
-
-
-adata8 = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_8/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata8.obs['batch']='8'
-adata8=remove_genes(adata8, IEG_list)
-
-
-# In[269]:
-
-
-adata9 = sc.read_10x_mtx(
-    '/home/fernandes/sample_data/sample_9/',  # the directory with the `.mtx` file
-    var_names='gene_symbols',                # use gene symbols for the variable names (variables-axis index)
-    cache=True)                          # write a cache file for faster subsequent reading
-adata9.obs['batch']='9'
-adata9=remove_genes(adata9, IEG_list)
-adata9
-
-
-# In[270]:
-
-
-adata4.obs['batch']
-
-
-# In[271]:
-
-
-adata =adata1.concatenate(adata2,adata3, adata4, adata6, adata7, adata8, adata9)
-
+# list(it.accumulate([adata1, adata2, adata2], sc.AnnData.concatenate))[-1]
 
 # In[272]:
 
 
 '''remove not used objects'''
-del (adata1,adata2,adata3, adata4, adata6, adata7, adata8, adata9)
+del (seq_data_filtered,seq_data)
 
 
 # # Preprocessing
@@ -172,7 +69,7 @@ del (adata1,adata2,adata3, adata4, adata6, adata7, adata8, adata9)
 # In[273]:
 
 
-sc.pl.highest_expr_genes(adata, n_top=20, )
+sc.pl.highest_expr_genes(adata, n_top=20)
 
 
 # #### Basic filtering
@@ -182,7 +79,6 @@ sc.pl.highest_expr_genes(adata, n_top=20, )
 
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=3)
-
 
 # In[249]:
 

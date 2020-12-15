@@ -1,6 +1,26 @@
 __authors__ = 'fernandes Dec 2020'
 #TODO finish helper class
 
+def load_samples(load_method=None,samplelist=None,cache=True):
+    '''
+    """[summary]
+    loads list of samples
+    Returns:
+    Anndata [list]: [adds batch number automatically based on sample order]
+    """    
+    '''
+    samples=[]
+    n=0
+    for sample in samplelist:
+        n+=1
+        data=load_method(
+        '/home/fernandes/sample_data/' + sample, # the directory with the `.mtx` file
+        var_names='gene_symbols',
+        cache=cache)
+        print (n)
+        data.obs['batch']=n
+        samples.append(data)
+    return samples
 
 class Sequencing():
     """[summary]   
@@ -24,17 +44,22 @@ class Sequencing():
         return [i for i, v in enumerate(a) if v in b_set]
 
     def remove_gene_list(self,dgc_mat, gene_list):
-    #Function receives a  gene matrix and a list of genes and returns a  gene matrix without the gene rows.
+    #Function receives a list of gene matrices and a list of genes and returns a  gene matrix without the gene rows.
     #The loaded 10x data is a dgc matrix.
-        idx=self.return_indices_not_in_list(dgc_mat.var_names,gene_list.gene.values)
-        dgc_mat_corr= dgc_mat[:,idx]
-
-        return (dgc_mat_corr)
+        dgc_corr_res=[]
+        for dgc in dgc_mat:
+            idx=self.return_indices_not_in_list(dgc.var_names,gene_list.gene.values)
+            dgc_mat_corr= dgc[:,idx]
+            dgc_corr_res.append(dgc_mat_corr)
+        return (dgc_corr_res)
     
     def keep_gene_list(self,dgc_mat, gene_list):
-        #Function receives a  gene matrix and a list of genes and returns a  gene matrix without the gene rows.
-    #The loaded 10x data is a dgc matrix.
-        idx=self.return_indices_inside_list(dgc_mat.var_names,gene_list.gene.values)
-        dgc_mat_corr= dgc_mat[:,idx]
+        #Function receives a list of gene matrices and a list of genes and returns a  gene matrix without the gene rows.
+        #The loaded 10x data is a dgc matrix.
+        dgc_corr_res=[]
+        for dgc in dgc_mat:
+            idx=self.return_indices_inside_list(dgc.var_names,gene_list.gene.values)
+            dgc_mat_corr= dgc[:,idx]
+            dgc_corr_res.append(dgc_mat_corr)
+        return (dgc_corr_res)
 
-        return (dgc_mat_corr)
