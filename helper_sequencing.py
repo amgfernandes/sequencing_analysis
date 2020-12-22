@@ -1,5 +1,5 @@
 __authors__ = 'fernandes Dec 2020'
-#TODO finish helper class. add metadata possibility
+#TODO finish helper class. Add metadata possibility
 
 def load_samples(load_method=None,samplelist=None,cache=True):
     '''
