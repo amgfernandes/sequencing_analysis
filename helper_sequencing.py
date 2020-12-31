@@ -7,7 +7,7 @@ def load_samples(load_method=None,samplelist=None,cache=True):
     loads list of samples
     Returns:
     Anndata [list]: [adds batch number automatically based on sample order]
-    """    
+    """
     '''
     samples=[]
     n=0
@@ -23,7 +23,7 @@ def load_samples(load_method=None,samplelist=None,cache=True):
     return samples
 
 class Sequencing():
-    """[summary]   
+    """[summary]
        Class with functions to help sequencing analysis
         """
     def __init__(self, seqdata,metadata=None):
@@ -34,7 +34,6 @@ class Sequencing():
         self.seqdata = seqdata
         self.metadata = metadata
 
-
     def return_indices_not_in_list(self,a, b):
         b_set = set(b)
         return [i for i, v in enumerate(a) if v not in b_set]
@@ -44,7 +43,8 @@ class Sequencing():
         return [i for i, v in enumerate(a) if v in b_set]
 
     def remove_gene_list(self,dgc_mat, gene_list):
-    #Function receives a list of gene matrices and a list of genes and returns a  gene matrix without the gene rows.
+    '''Function receives a list of gene matrices and a list of genes and returns
+     a gene matrix without the gene rows.'''
     #The loaded 10x data is a dgc matrix.
         dgc_corr_res=[]
         for dgc in dgc_mat:
@@ -52,9 +52,10 @@ class Sequencing():
             dgc_mat_corr= dgc[:,idx]
             dgc_corr_res.append(dgc_mat_corr)
         return (dgc_corr_res)
-    
+
     def keep_gene_list(self,dgc_mat, gene_list):
-        #Function receives a list of gene matrices and a list of genes and returns a  gene matrix without the gene rows.
+        '''Function receives a list of gene matrices and a list of genes and
+        returns a gene matrix containing the gene rows.'''
         #The loaded 10x data is a dgc matrix.
         dgc_corr_res=[]
         for dgc in dgc_mat:
@@ -62,4 +63,3 @@ class Sequencing():
             dgc_mat_corr= dgc[:,idx]
             dgc_corr_res.append(dgc_mat_corr)
         return (dgc_corr_res)
-
