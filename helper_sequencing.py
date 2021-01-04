@@ -1,7 +1,7 @@
 __authors__ = 'fernandes Dec 2020'
 #TODO finish helper class. Add metadata possibility
-
-def load_samples(load_method=None,samplelist=None,cache=True):
+import scanpy as sc
+def load_samples(data_location=None,load_method=None,samplelist=None,cache=True):
     '''
     """[summary]
     loads list of samples
@@ -13,13 +13,20 @@ def load_samples(load_method=None,samplelist=None,cache=True):
     n=0
     for sample in samplelist:
         n+=1
-        data=load_method(
-        '/home/fernandes/sample_data/' + sample, # the directory with the `.mtx` file
-        var_names='gene_symbols',
-        cache=cache)
-        print (n)
-        data.obs['batch']=n
-        samples.append(data)
+        if load_method==sc.read_h5ad:
+            data=load_method(data_location + sample +"/adata.h5ad")
+            print (n)
+            print (data)
+            data.obs['batch']=n
+            samples.append(data)
+        else:
+            load_method=load_method
+            data=load_method(data_location + sample, # the directory with the `.mtx` file
+            var_names='gene_symbols',
+            cache=cache)
+            print (n)
+            data.obs['batch']=n
+            samples.append(data)
     return samples
 
 class Sequencing():
