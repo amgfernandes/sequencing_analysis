@@ -43,9 +43,9 @@ class Sequencing():
         return [i for i, v in enumerate(a) if v in b_set]
 
     def remove_gene_list(self,dgc_mat, gene_list):
-    '''Function receives a list of gene matrices and a list of genes and returns
-     a gene matrix without the gene rows.'''
-    #The loaded 10x data is a dgc matrix.
+        '''Function receives a list of gene matrices and a list of genes and returns
+        a gene matrix without the list gene rows.'''
+        #The loaded 10x data is a dgc matrix.
         dgc_corr_res=[]
         for dgc in dgc_mat:
             idx=self.return_indices_not_in_list(dgc.var_names,gene_list.gene.values)
@@ -55,7 +55,7 @@ class Sequencing():
 
     def keep_gene_list(self,dgc_mat, gene_list):
         '''Function receives a list of gene matrices and a list of genes and
-        returns a gene matrix containing the gene rows.'''
+        returns a gene matrix containing the list of gene rows.'''
         #The loaded 10x data is a dgc matrix.
         dgc_corr_res=[]
         for dgc in dgc_mat:
