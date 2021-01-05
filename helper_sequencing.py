@@ -1,7 +1,7 @@
 __authors__ = 'fernandes Dec 2020'
 #TODO finish helper class. Add metadata possibility
 import scanpy as sc
-def load_samples(data_location=None,load_method=None,samplelist=None,cache=True):
+def load_samples(data_location=None,load_method=None,samplelist=None,cache=False):
     '''
     """[summary]
     loads list of samples
@@ -19,10 +19,11 @@ def load_samples(data_location=None,load_method=None,samplelist=None,cache=True)
             print (data)
             data.obs['batch']=n
             samples.append(data)
+            print ('loading with h5ad: check that gene names are recognized')
         else:
             load_method=load_method
             data=load_method(data_location + sample, # the directory with the `.mtx` file
-            var_names='gene_symbols',
+            var_names='gene_ids',
             cache=cache)
             print (n)
             data.obs['batch']=n

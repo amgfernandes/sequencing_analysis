@@ -14,7 +14,7 @@ from matplotlib import rcParams
 from helper_sequencing import Sequencing
 from helper_sequencing import load_samples
 import itertools as it
-
+import anndata
 # %%:
 
 sc.settings.verbosity = 3             # verbosity: errors (0), warnings (1), info (2), hints (3)
@@ -26,33 +26,47 @@ sc.settings.set_figure_params(dpi=80, facecolor='white')
 
 
 #results_file = '/home/fernandes/sample_data/scanpy_test.h5ad'  # the file that will store the analysis results
-results_file = '/home/fernandes/tests/scanpy_tests.h5ad'  # the file that will store the analysis results
+results_file = '/home/fernandes/RGC_scRNAseq_analysis/larva/D_rerio.GRCz11.102.h5ad'  # the file that will store the analysis results
 
 # #### Read in the count matrix into an `AnnData <https://anndata.readthedocs.io/en/latest/anndata.AnnData.html>`__ object, which holds many slots for annotations and different representations of the data. It also comes with its own HDF5 file format: .h5ad.
 
 # In[4]:
 
 
-IEG_list=pd.read_csv('/home/fernandes/sample_data/IEG_list.csv', header=None)
+IEG_list=pd.read_csv('/home/fernandes/RGC_scRNAseq_analysis/IEG_list.csv', header=None)
 IEG_list.columns=['gene']
 IEG_list.gene.values
 
 # In[6]:
 #data_list=["sample_1","sample_2","sample_3", "sample_4","sample_5","sample_6","sample_7","sample_8","sample_9"]
-data_list=["test1"]
+data_list=["ZebraFishRGC1_S1_L001", "ZebraFishRGC2_S1_L005", "ZebraFishRGC3_S2_L001", "ZebraFishRGC4_S2_L005"]
 
 #folder_with_data='/home/fernandes/sample_data/'
-folder_with_data='/home/fernandes/tests/'
+folder_with_data='/home/fernandes/RGC_scRNAseq_analysis/larva/D_rerio.GRCz11.102/'
 
+'''before loading change file names to `matrix.mtx`, `genes.tsv` and `barcodes.tsv`'''
 #seq_data=load_samples(data_location=folder_with_data,load_method=sc.read_10x_mtx,samplelist=data_list)
-seq_data=load_samples(data_location=folder_with_data,load_method=sc.read_h5ad,samplelist=data_list)
+seq_data=load_samples(data_location=folder_with_data,load_method=sc.read_10x_mtx,samplelist=data_list)
 seq_helper=Sequencing(seqdata=seq_data)
 
 seq_data_filtered=seq_helper.remove_gene_list(seq_data,IEG_list)
+#%% TODO
+'''Trying to read properly h5ad files from kb_python'''
+adata = anndata.read(folder_with_data+"ZebraFishRGC1_S1_L001/"+'adata.h5ad')
+adata.var["gene_id"] = adata.var.index.values
 
+t2g = pd.read_csv(folder_with_data+"tr2g_D_rerio.GRCz11.102.tsv", header=None, names=["tid", "gene_id", "gene_name"], sep="\t")
+t2g.index = t2g.gene_id
+t2g = t2g.loc[~t2g.index.duplicated(keep='first')]
+
+adata.var["gene_name"] = adata.var.gene_id.map(t2g["gene_name"])
+
+#adata.var.index = adata.var["gene_name"]
+
+adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
 #%%
 # Save figure (set to True to save)
-folder_with_data_plot='/home/fernandes/tests/plots'
+folder_with_data_plot='/home/fernandes/RGC_scRNAseq_analysis/larva/D_rerio.GRCz11.102/plots'
 sc.settings.autosave = True #save figures True/False
 sc.settings.figdir = folder_with_data_plot
 sc.settings.set_figure_params(dpi_save=320, format="png")
@@ -64,20 +78,36 @@ if not os.path.isdir(outputDirectory):
 #%%
 
 '''iterate over all elements on list of samples and concatenate them...only keep last result'''
-adata=list(it.accumulate(seq_data_filtered, sc.AnnData.concatenate))[-1]
-
-# list(it.accumulate([adata1, adata2, adata2], sc.AnnData.concatenate))[-1]
+#adata=list(it.accumulate(seq_data_filtered, sc.AnnData.concatenate))[-1]
+adata = seq_data_filtered[0].concatenate(seq_data_filtered[1], seq_data_filtered[2],seq_data_filtered[3], join='outer')
+# list(it.accumulate([adata1, adata2, adata3], sc.AnnData.concatenate))[-1]
 
 #%%
+'''Test for library saturation'''
+# Create a plot showing genes detected as a function of UMI counts.
+fig, ax = plt.subplots(figsize=(10, 7))
+
+x = np.asarray(adata.X.sum(axis=1))[:,0]
+y = np.asarray(np.sum(adata.X>0, axis=1))[:,0]
+
+ax.scatter(x, y, color="green", alpha=0.25)
+ax.set_xlabel("UMI Counts")
+ax.set_ylabel("Genes Detected")
+ax.set_xscale('log')
+ax.set_yscale('log', nonposy='clip')
+
+ax.set_xlim((0.5, 4500))
+ax.set_ylim((0.5,2000))
 
 
-'''remove not used objects'''
+#%%
+'''remove objects not used further'''
 del (seq_data_filtered,seq_data)
 
-
 # # Preprocessing
-# Show those genes that yield the highest fraction of counts in each single cells, across all cells.
+
 #%%
+# Show those genes that yield the highest fraction of counts in each single cells, across all cells.
 sc.pl.highest_expr_genes(adata, n_top=20)
 # #### Basic filtering
 
@@ -105,8 +135,6 @@ adata = adata[adata.obs.pct_counts_mt < 5, :]
 # Total-count normalize (library-size correct) the data matrix 𝐗 to 10,000 reads per cell, so that counts become comparable among cells.
 #%%
 sc.pp.normalize_total(adata, target_sum=10000)
-
-
 
 #%%
 '''Logarithmize the data.'''
