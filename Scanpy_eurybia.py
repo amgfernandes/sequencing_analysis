@@ -32,38 +32,24 @@ results_file = '/home/fernandes/RGC_scRNAseq_analysis/larva/D_rerio.GRCz11.102.h
 
 # In[4]:
 
-
 IEG_list=pd.read_csv('/home/fernandes/RGC_scRNAseq_analysis/IEG_list.csv', header=None)
 IEG_list.columns=['gene']
 IEG_list.gene.values
 
 # In[6]:
 #data_list=["sample_1","sample_2","sample_3", "sample_4","sample_5","sample_6","sample_7","sample_8","sample_9"]
+'''give a list of sample folders'''
 data_list=["ZebraFishRGC1_S1_L001", "ZebraFishRGC2_S1_L005", "ZebraFishRGC3_S2_L001", "ZebraFishRGC4_S2_L005"]
 
 #folder_with_data='/home/fernandes/sample_data/'
 folder_with_data='/home/fernandes/RGC_scRNAseq_analysis/larva/D_rerio.GRCz11.102/'
 
-'''before loading change file names to `matrix.mtx`, `genes.tsv` and `barcodes.tsv`'''
 #seq_data=load_samples(data_location=folder_with_data,load_method=sc.read_10x_mtx,samplelist=data_list)
-seq_data=load_samples(data_location=folder_with_data,load_method=sc.read_10x_mtx,samplelist=data_list)
+seq_data=load_samples(data_location=folder_with_data,load_method=sc.read_mtx,samplelist=data_list)
 seq_helper=Sequencing(seqdata=seq_data)
 
 seq_data_filtered=seq_helper.remove_gene_list(seq_data,IEG_list)
-#%% TODO
-'''Trying to read properly h5ad files from kb_python'''
-adata = anndata.read(folder_with_data+"ZebraFishRGC1_S1_L001/"+'adata.h5ad')
-adata.var["gene_id"] = adata.var.index.values
 
-t2g = pd.read_csv(folder_with_data+"tr2g_D_rerio.GRCz11.102.tsv", header=None, names=["tid", "gene_id", "gene_name"], sep="\t")
-t2g.index = t2g.gene_id
-t2g = t2g.loc[~t2g.index.duplicated(keep='first')]
-
-adata.var["gene_name"] = adata.var.gene_id.map(t2g["gene_name"])
-
-#adata.var.index = adata.var["gene_name"]
-
-adata.var_names_make_unique()  # this is unnecessary if using `var_names='gene_ids'` in `sc.read_10x_mtx`
 #%%
 # Save figure (set to True to save)
 folder_with_data_plot='/home/fernandes/RGC_scRNAseq_analysis/larva/D_rerio.GRCz11.102/plots'
@@ -79,8 +65,10 @@ if not os.path.isdir(outputDirectory):
 
 '''iterate over all elements on list of samples and concatenate them...only keep last result'''
 #adata=list(it.accumulate(seq_data_filtered, sc.AnnData.concatenate))[-1]
-adata = seq_data_filtered[0].concatenate(seq_data_filtered[1], seq_data_filtered[2],seq_data_filtered[3], join='outer')
-# list(it.accumulate([adata1, adata2, adata3], sc.AnnData.concatenate))[-1]
+
+'''concatenate batches'''
+adata = seq_data_filtered[0].concatenate(seq_data_filtered[1], seq_data_filtered[2],seq_data_filtered[3])
+
 
 #%%
 '''Test for library saturation'''
@@ -249,7 +237,7 @@ adata_corr
 # In[48]:
 
 
-adata_corr.var_names
+list_of_genes=list(adata_corr.var_names)
 
 
 # In[55]:
@@ -277,3 +265,11 @@ sc.pl.umap(adata_corr, color=['leiden','rplp1', 'stmn1b', 'rps20'])
 rcParams['figure.figsize'] = 5,5
 sc.pl.umap(adata_corr, color='leiden')
 
+
+# %%
+
+# %%
+
+# %%
+
+# %%

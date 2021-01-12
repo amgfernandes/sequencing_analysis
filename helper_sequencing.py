@@ -1,5 +1,7 @@
 __authors__ = 'fernandes Dec 2020'
 #TODO finish helper class. Add metadata possibility
+
+import pandas as pd
 import scanpy as sc
 def load_samples(data_location=None,load_method=None,samplelist=None,cache=False):
     '''
@@ -20,14 +22,24 @@ def load_samples(data_location=None,load_method=None,samplelist=None,cache=False
             data.obs['batch']=n
             samples.append(data)
             print ('loading with h5ad: check that gene names are recognized')
-        else:
-            load_method=load_method
+        if load_method==sc.read_10x_mtx:
             data=load_method(data_location + sample, # the directory with the `.mtx` file
             var_names='gene_ids',
             cache=cache)
             print (n)
             data.obs['batch']=n
             samples.append(data)
+        if load_method==sc.read_mtx:
+            data=load_method(data_location + sample + '/cells_x_genes.mtx') # the directory with the `.mtx` file
+            data.obs.index = pd.read_csv(data_location + sample +  '/cells_x_genes.barcodes.txt', header=None)[0].values
+            data.var.index = pd.read_csv(data_location + sample + '/cells_x_genes.genes.txt', header=None)[0].values
+            data.var_names_make_unique() #Makes the index unique by appending a number string to each duplicate index element
+            print ('batch number:',n)
+            print (data)
+            data.obs['batch']=n
+            samples.append(data)
+            print ('loading with read_mtx: check that gene names are recognized') 
+    print ('loading data finished')
     return samples
 
 class Sequencing():
