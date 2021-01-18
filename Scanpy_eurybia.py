@@ -19,16 +19,11 @@ import seaborn as sns
 import scrublet as scr
 import os
 # %%:
-
 # verbosity: errors (0),warnings (1),info(2),hints(3)
 sc.settings.verbosity = 3
 sc.logging.print_header()
 sc.settings.set_figure_params(dpi=80, facecolor='white')
-
-
 # %%:
-
-
 # results_file = '/home/fernandes/sample_data/scanpy_test.h5ad'
 # the file that will store the analysis results
 # the file that will store the analysis results
