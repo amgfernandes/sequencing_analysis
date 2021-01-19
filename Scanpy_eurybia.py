@@ -2,10 +2,10 @@
 # coding: utf-8
 
 # %%:
-
-
 from anndata._core.aligned_mapping import I
+from anndata._core.views import as_view
 import numpy as np
+from numpy.lib.npyio import save
 import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
@@ -54,6 +54,7 @@ IEG_list.gene.values
 # ,"sample_6","sample_7","sample_8","sample_9"]
 '''give a list of sample folders'''
 
+'''for adult data'''
 data_list = ["RGC10_S6_L001", "RGC11_S1_L001",
              "RGC11_S1_L002", "RGC12_S2_L001",
              "RGC12_S2_L002", "RGC13_S3_L001",
@@ -63,15 +64,14 @@ data_list = ["RGC10_S6_L001", "RGC11_S1_L001",
              "RGC16_S6_L002", "RGC17_S1_L008",
              "RGC18_S2_L008", "RGC19_S3_L008",
              "RGC20_S4_L008", "RGC5_S1_L001",
-             "RGC5_S1_L002"," RGC6_S2_L001",
-             "RGC6_S2_L002","RGC7_S3_L001",
+             "RGC5_S1_L002", "RGC6_S2_L001",
+             "RGC6_S2_L002", "RGC7_S3_L001",
              "RGC7_S3_L002", "RGC8_S4_L001",
-             "RGC8_S4_L002", "RGC9_S5_L001",
-             ]
+             "RGC8_S4_L002", "RGC9_S5_L001"]
 
-""" 
+"""for larval data
 data_list = ["ZebraFishRGC1_S1_L001", "ZebraFishRGC2_S1_L005",
-             "ZebraFishRGC3_S2_L001", "ZebraFishRGC4_S2_L005"]     """         
+"ZebraFishRGC3_S2_L001", "ZebraFishRGC4_S2_L005"]"""
 
 # folder_with_data='/home/fernandes/sample_data/'
 folder_with_data = '/home/fernandes/RGC_scRNAseq_analysis/adult/' \
@@ -82,12 +82,11 @@ folder_with_data = '/home/fernandes/RGC_scRNAseq_analysis/adult/' \
 seq_data = load_samples(data_location=folder_with_data,
                         load_method=sc.read_mtx, samplelist=data_list)
 seq_helper = Sequencing(seqdata=seq_data)
-
 seq_data_filtered = seq_helper.remove_gene_list(seq_data, IEG_list)
 
 # %%
 # Save figure (set to True to save)
-folder_with_data_plot = '/home/fernandes/RGC_scRNAseq_analysis/larva' \
+folder_with_data_plot = '/home/fernandes/RGC_scRNAseq_analysis/adult' \
                         '/D_rerio.GRCz11.102/plots'
 sc.settings.autosave = True  # save figures True/False
 sc.settings.figdir = folder_with_data_plot
@@ -100,12 +99,27 @@ if not os.path.isdir(outputDirectory):
 # %%
 
 '''iterate over all elements on list of samples and concatenate them...only
-keep last result'''
+keep last result '''
+# Not working as it should for now TODO: Fix
 # adata=list(it.accumulate(seq_data_filtered, sc.AnnData.concatenate))[-1]
 
 '''concatenate batches'''
+# for larval data
+""" adata = seq_data_filtered[0].concatenate(
+    seq_data_filtered[1], seq_data_filtered[2], seq_data_filtered[3]) """
+
+# for adult data
 adata = seq_data_filtered[0].concatenate(
-    seq_data_filtered[1], seq_data_filtered[2], seq_data_filtered[3])
+    seq_data_filtered[1], seq_data_filtered[2], seq_data_filtered[3],
+    seq_data_filtered[4], seq_data_filtered[5], seq_data_filtered[6],
+    seq_data_filtered[7], seq_data_filtered[8], seq_data_filtered[9],
+    seq_data_filtered[10], seq_data_filtered[11], seq_data_filtered[12],
+    seq_data_filtered[13], seq_data_filtered[14], seq_data_filtered[15],
+    seq_data_filtered[16], seq_data_filtered[17], seq_data_filtered[18],
+    seq_data_filtered[19], seq_data_filtered[20], seq_data_filtered[21],
+    seq_data_filtered[22], seq_data_filtered[23], seq_data_filtered[24],
+    seq_data_filtered[25])
+
 
 '''create a list of genes'''
 list_of_genes = list(adata.var_names)
@@ -139,7 +153,7 @@ sc.pl.highest_expr_genes(adata, n_top=20)
 # #### Basic filtering
 
 # %%
-#removing genes that are expressed in
+# removing genes that are expressed in
 # fewer than 25 cells and removing cells that have fewer than
 # 450 features. Similar to Harvard defaults
 sc.pp.filter_cells(adata, min_genes=450)
@@ -193,7 +207,7 @@ plt.savefig(folder_with_data_plot+'/ncells_distplot.png')
 
 # %%
 '''filter to use yes or no'''
-#adata = adata[adata.obs.n_genes_by_counts < 3000, :]
+# adata = adata[adata.obs.n_genes_by_counts < 3000, :]
 data = adata[adata.obs.pct_counts_mt < 5, :]
 
 # %%
@@ -249,7 +263,9 @@ sc.tl.pca(adata_corr, svd_solver='arpack')
 
 sc.pl.pca_variance_ratio(adata_corr, log=True)
 
-
+# %%
+sc.tl.pca(adata, svd_solver='arpack')
+sc.pl.pca_variance_ratio(adata, log=True)
 # %%
 sce.pp.harmony_integrate(adata_corr, 'batch')  # correct batch effect
 
@@ -267,13 +283,10 @@ sce.pp.harmony_integrate(adata_corr, 'batch')  # correct batch effect
 sc.pp.neighbors(adata_corr, n_neighbors=10, n_pcs=30)
 
 
-# In[41]:
-
-
+# %%]:
 sc.pp.neighbors(adata, n_neighbors=10, n_pcs=30)
 
-
-# In[42]:
+# %%:
 
 
 sc.tl.umap(adata_corr)
@@ -284,13 +297,13 @@ sc.tl.umap(adata_corr)
 
 sc.tl.umap(adata)
 
-#%%
+# %%
 sc.tl.leiden(adata, key_added='clusters', resolution=0.5)
 
-#%%
+# %%
 rcParams['figure.figsize'] = 5, 5
 sc.pl.umap(adata, color='clusters', add_outline=True, legend_loc='on data',
-           legend_fontsize=12, legend_fontoutline=2,frameon=False,
+           legend_fontsize=12, legend_fontoutline=2, frameon=False,
            title='clustering of cells', palette='Set1')
 # In[44]:
 
@@ -334,18 +347,48 @@ sc.pl.umap(adata_corr, color=['leiden', 'rplp1', 'stmn1b', 'rps20'])
 # In[59]:
 
 
-rcParams['figure.figsize'] = 5, 5
+rcParams['figure.figsize'] = 10, 5
 sc.pl.umap(adata_corr, color='leiden')
 
 
 # %%
 '''explore data'''
 sc.tl.dendrogram(adata, 'clusters')
-sc.tl.rank_genes_groups(adata, groupby='clusters', n_genes=adata.shape[1], method='wilcoxon')
+sc.tl.rank_genes_groups(
+    adata,
+    groupby='clusters',
+    n_genes=adata.shape[1],
+    method='wilcoxon')
 sc.pl.rank_genes_groups_dotplot(adata, n_genes=1)
 # %%
-sc.pl.umap(adata, color=['mafaa'])
+sc.pl.umap(adata, color=['mafaa', 'eomesa', 'tbr1b'], save='selected_genes.png')
 sc.pl.umap(adata, color=['clusters'])
 # %%
 
+sc.pl.dotplot(adata, var_names=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
+ 'id2b'],
+groupby='clusters', save='selected_genes.png', figsize=(8,10))
+# %%
+sc.pl.dotplot(adata, var_names=["eomesa", "tbr1b", "mafaa", "neurod1"], 
+groupby='clusters', save='selected_genes.png', figsize=(8,8))
+# %%
+cluster_to_check='29'
+clust_look = adata[adata.obs['clusters'].values.isin([cluster_to_check])]
+clust_look.obs['cluster_to_check']=cluster_to_check
+
+# %%
+sc.tl.rank_genes_groups(
+    clust_look,
+    groupby='cluster_to_check',
+    n_genes=clust_look.shape[1],
+    method='wilcoxon')
+sc.pl.rank_genes_groups_stacked_violin(clust_look, n_genes=30)
+# %%
+sc.tl.leiden(clust_look)
+sc.tl.rank_genes_groups(clust_look, groupby='leiden')
+sc.pl.rank_genes_groups_dotplot(clust_look, n_genes=3)
+# %%
+sc.pl.dotplot(clust_look,var_names=['mafaa', 'epha7',
+ 'id2b'], 
+groupby='leiden', save='selected_genes_subcluster.png', figsize=(8,8))
 # %%

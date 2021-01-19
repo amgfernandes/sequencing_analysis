@@ -38,15 +38,15 @@ def load_samples(
             samples.append(data)
         if load_method == sc.read_mtx:
             # the directory with the `.mtx` file
-            data = load_method(data_location + sample +\
-                '/counts_unfiltered/cells_x_genes.mtx')
+            data = load_method(data_location + sample +
+                               '/counts_unfiltered/cells_x_genes.mtx')
             data.obs.index = pd.read_csv(
-                data_location + sample + \
-                    '/counts_unfiltered/cells_x_genes.barcodes.txt',
+                data_location + sample +
+                '/counts_unfiltered/cells_x_genes.barcodes.txt',
                 header=None)[0].values
             data.var.index = pd.read_csv(
-                data_location + sample + \
-                    '/counts_unfiltered/cells_x_genes.genes.txt',
+                data_location + sample +
+                '/counts_unfiltered/cells_x_genes.genes.txt',
                 header=None)[0].values
             # Makes the index unique by appending
             # a number string to each duplicate index element
