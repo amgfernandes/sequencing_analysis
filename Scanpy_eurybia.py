@@ -27,8 +27,8 @@ sc.settings.set_figure_params(dpi=80, facecolor='white')
 # results_file = '/home/fernandes/sample_data/scanpy_test.h5ad'
 # the file that will store the analysis results
 # the file that will store the analysis results
-results_file = '/home/fernandes/RGC_scRNAseq_analysis/n\
-      adult/D_rerio.GRCz11.102.h5ad'
+results_file = '/home/fernandes/RGC_scRNAseq_analysis/\
+adult/D_rerio.GRCz11.102.h5ad'
 
 # Read in the count matrix into an `AnnData
 # <https://anndata.readthedocs.io/en/latest/anndata.AnnData.html>`__ object,
@@ -179,7 +179,7 @@ sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',
 '''Predict doublets'''
 
 scrub = scr.Scrublet(adata.X)
-adata.obs['doublet_scores'],adata.obs['predicted_doublets'] = scrub.scrub_doublets()
+adata.obs['doublet_scores'], adata.obs['predicted_doublets'] = scrub.scrub_doublets()
 scrub.plot_histogram()
 
 sum(adata.obs['predicted_doublets'])
@@ -242,6 +242,7 @@ adata.raw = adata
 # %%
 '''filter only highly variable genes'''
 adata = adata[:, adata.var.highly_variable]
+adata.write(results_file)
 
 # %%
 
@@ -293,12 +294,23 @@ sc.tl.umap(adata_corr)
 
 
 # In[43]:
+'''Embedding the neighborhood graph
+We suggest embedding the graph in two dimensions using UMAP
+(McInnes et al., 2018), see below. It is potentially more faithful to the
+global connectivity of the manifold than tSNE, i.e., it better preserves
+trajectories. In some ocassions, you might still observe disconnected
+clusters and similar connectivity violations. They can usually be
+remedied by running:'''
 
+sc.tl.paga(adata)
+sc.pl.paga(adata, plot=False)
+# remove `plot=False` if you want to see the coarse-grained graph
+sc.tl.umap(adata, init_pos='paga')
 
 sc.tl.umap(adata)
 
 # %%
-sc.tl.leiden(adata, key_added='clusters', resolution=0.5)
+sc.tl.leiden(adata, key_added='clusters', resolution=0.3)
 
 # %%
 rcParams['figure.figsize'] = 5, 5
@@ -361,20 +373,32 @@ sc.tl.rank_genes_groups(
     method='wilcoxon')
 sc.pl.rank_genes_groups_dotplot(adata, n_genes=1)
 # %%
-sc.pl.umap(adata, color=['mafaa', 'eomesa', 'tbr1b'], save='selected_genes.png')
+sc.pl.umap(adata, color=['mafaa', 'eomesa', 'tbr1b'],
+           save='selected_genes.png')
 sc.pl.umap(adata, color=['clusters'])
 # %%
 
 sc.pl.dotplot(adata, var_names=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
- 'id2b'],
-groupby='clusters', save='selected_genes.png', figsize=(8,10))
+                                'id2b', 'tbx20', 'onecut1'],
+              groupby='clusters', save='selected_genes.png', figsize=(8, 10))
 # %%
-sc.pl.dotplot(adata, var_names=["eomesa", "tbr1b", "mafaa", "neurod1"], 
-groupby='clusters', save='selected_genes.png', figsize=(8,8))
+sc.pl.heatmap(adata, var_names=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
+                                'id2b', 'tbx20'],
+              groupby='clusters', save='selected_genes.png', figsize=(8, 10))
+
 # %%
-cluster_to_check='29'
+sc.pl.heatmap(adata, var_names=['eomesa', 'mafaa', 'tbr1b'],
+              groupby='clusters', save='selected_genes.png', figsize=(8, 10))
+
+# %%
+sc.pl.umap(adata,
+        color=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
+                         'id2b', 'tbx20', 'onecut1'],
+        color_map='viridis', save='_selected_genes.png')
+# %%
+cluster_to_check = '29'
 clust_look = adata[adata.obs['clusters'].values.isin([cluster_to_check])]
-clust_look.obs['cluster_to_check']=cluster_to_check
+clust_look.obs['cluster_to_check'] = cluster_to_check
 
 # %%
 sc.tl.rank_genes_groups(
@@ -382,13 +406,24 @@ sc.tl.rank_genes_groups(
     groupby='cluster_to_check',
     n_genes=clust_look.shape[1],
     method='wilcoxon')
-sc.pl.rank_genes_groups_stacked_violin(clust_look, n_genes=30)
+sc.pl.rank_genes_groups_stacked_violin(clust_look, n_genes=3)
 # %%
 sc.tl.leiden(clust_look)
 sc.tl.rank_genes_groups(clust_look, groupby='leiden')
 sc.pl.rank_genes_groups_dotplot(clust_look, n_genes=3)
 # %%
-sc.pl.dotplot(clust_look,var_names=['mafaa', 'epha7',
- 'id2b'], 
-groupby='leiden', save='selected_genes_subcluster.png', figsize=(8,8))
+sc.pl.dotplot(clust_look, var_names=['mafaa', 'epha7',
+                                     'id2b'],
+              groupby='leiden', save='selected_genes_subcluster.png',
+              figsize=(8, 8))
+# %%
+marker_genes_dict = {'Prey': ['epha7', 'id2b', 'mafaa'],
+                    'Phototaxis': ['eomesa', 'tbx20'],
+                    'Markers': ['tbr1b', 'onecut1', 'shisa9b']}
+sc.pl.dotplot(adata, marker_genes_dict, groupby='clusters', dendrogram=True,
+              figsize=(10, 10), save='_marker_genes.png')
+
+# %%
+
+sc.pl.umap(adata, color=['clusters'], s=5)
 # %%
