@@ -28,7 +28,7 @@ sc.settings.set_figure_params(dpi=80, facecolor='white')
 # the file that will store the analysis results
 # the file that will store the analysis results
 results_file = '/home/fernandes/RGC_scRNAseq_analysis/n\
-      larva/D_rerio.GRCz11.102.h5ad'
+      adult/D_rerio.GRCz11.102.h5ad'
 
 # Read in the count matrix into an `AnnData
 # <https://anndata.readthedocs.io/en/latest/anndata.AnnData.html>`__ object,
@@ -53,14 +53,32 @@ IEG_list.gene.values
 # data_list=["sample_1","sample_2","sample_3", "sample_4","sample_5"
 # ,"sample_6","sample_7","sample_8","sample_9"]
 '''give a list of sample folders'''
+
+data_list = ["RGC10_S6_L001", "RGC11_S1_L001",
+             "RGC11_S1_L002", "RGC12_S2_L001",
+             "RGC12_S2_L002", "RGC13_S3_L001",
+             "RGC13_S3_L002", "RGC14_S4_L001",
+             "RGC14_S4_L002", "RGC15_S5_L001",
+             "RGC15_S5_L002", "RGC16_S6_L001",
+             "RGC16_S6_L002", "RGC17_S1_L008",
+             "RGC18_S2_L008", "RGC19_S3_L008",
+             "RGC20_S4_L008", "RGC5_S1_L001",
+             "RGC5_S1_L002"," RGC6_S2_L001",
+             "RGC6_S2_L002","RGC7_S3_L001",
+             "RGC7_S3_L002", "RGC8_S4_L001",
+             "RGC8_S4_L002", "RGC9_S5_L001",
+             ]
+
+""" 
 data_list = ["ZebraFishRGC1_S1_L001", "ZebraFishRGC2_S1_L005",
-             "ZebraFishRGC3_S2_L001", "ZebraFishRGC4_S2_L005"]
+             "ZebraFishRGC3_S2_L001", "ZebraFishRGC4_S2_L005"]     """         
 
 # folder_with_data='/home/fernandes/sample_data/'
-folder_with_data = '/home/fernandes/RGC_scRNAseq_analysis/n\
-      larva/D_rerio.GRCz11.102/'
+folder_with_data = '/home/fernandes/RGC_scRNAseq_analysis/adult/' \
+    'D_rerio.GRCz11.102/'
 
-# seq_data=load_samples(data_location=folder_with_data,load_method=sc.read_10x_mtx,samplelist=data_list)
+# seq_data=load_samples(data_location=folder_with_data,
+# load_method=sc.read_10x_mtx,samplelist=data_list)
 seq_data = load_samples(data_location=folder_with_data,
                         load_method=sc.read_mtx, samplelist=data_list)
 seq_helper = Sequencing(seqdata=seq_data)
@@ -69,8 +87,8 @@ seq_data_filtered = seq_helper.remove_gene_list(seq_data, IEG_list)
 
 # %%
 # Save figure (set to True to save)
-folder_with_data_plot = '/home/fernandes/RGC_scRNAseq_analysis/larvan\
-      /D_rerio.GRCz11.102/plots'
+folder_with_data_plot = '/home/fernandes/RGC_scRNAseq_analysis/larva' \
+                        '/D_rerio.GRCz11.102/plots'
 sc.settings.autosave = True  # save figures True/False
 sc.settings.figdir = folder_with_data_plot
 sc.settings.set_figure_params(dpi_save=320, format="png")
@@ -113,18 +131,19 @@ plt.savefig(folder_with_data_plot+'/library saturation.png')
 # %%
 '''remove objects not used further'''
 del (seq_data_filtered, seq_data)
-
-# # Preprocessing
-
 # %%
+# # Preprocessing
 # Show those genes that yield the highest fraction of counts in each single
 # cells, across all cells.
 sc.pl.highest_expr_genes(adata, n_top=20)
 # #### Basic filtering
 
 # %%
-sc.pp.filter_cells(adata, min_genes=200)
-sc.pp.filter_genes(adata, min_cells=3)
+#removing genes that are expressed in
+# fewer than 25 cells and removing cells that have fewer than
+# 450 features. Similar to Harvard defaults
+sc.pp.filter_cells(adata, min_genes=450)
+sc.pp.filter_genes(adata, min_cells=25)
 
 # %%
 # annotate the group of mitochondrial genes as 'mt'
@@ -146,8 +165,7 @@ sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',
 '''Predict doublets'''
 
 scrub = scr.Scrublet(adata.X)
-adata.obs['doublet_scores'],
-adata.obs['predicted_doublets'] = scrub.scrub_doublets()
+adata.obs['doublet_scores'],adata.obs['predicted_doublets'] = scrub.scrub_doublets()
 scrub.plot_histogram()
 
 sum(adata.obs['predicted_doublets'])
@@ -174,11 +192,12 @@ sns.despine()
 plt.savefig(folder_with_data_plot+'/ncells_distplot.png')
 
 # %%
-adata = adata[adata.obs.n_genes_by_counts < 3000, :]
-adata = adata[adata.obs.pct_counts_mt < 5, :]
-# Total-count normalize (library-size correct) the data matrix 𝐗 to 10,000
-#  reads per cell, so that counts become comparable among cells.
+'''filter to use yes or no'''
+#adata = adata[adata.obs.n_genes_by_counts < 3000, :]
+data = adata[adata.obs.pct_counts_mt < 5, :]
+
 # %%
+
 sc.pp.normalize_total(adata, target_sum=10000)
 
 # %%
@@ -245,13 +264,13 @@ sce.pp.harmony_integrate(adata_corr, 'batch')  # correct batch effect
 # adata_corr.var_names_make_unique()
 
 # %%
-sc.pp.neighbors(adata_corr, n_neighbors=10, n_pcs=40)
+sc.pp.neighbors(adata_corr, n_neighbors=10, n_pcs=30)
 
 
 # In[41]:
 
 
-sc.pp.neighbors(adata, n_neighbors=10, n_pcs=40)
+sc.pp.neighbors(adata, n_neighbors=10, n_pcs=30)
 
 
 # In[42]:
@@ -265,7 +284,14 @@ sc.tl.umap(adata_corr)
 
 sc.tl.umap(adata)
 
+#%%
+sc.tl.leiden(adata, key_added='clusters', resolution=0.5)
 
+#%%
+rcParams['figure.figsize'] = 5, 5
+sc.pl.umap(adata, color='clusters', add_outline=True, legend_loc='on data',
+           legend_fontsize=12, legend_fontoutline=2,frameon=False,
+           title='clustering of cells', palette='Set1')
 # In[44]:
 
 
@@ -313,9 +339,13 @@ sc.pl.umap(adata_corr, color='leiden')
 
 
 # %%
-
+'''explore data'''
+sc.tl.dendrogram(adata, 'clusters')
+sc.tl.rank_genes_groups(adata, groupby='clusters', n_genes=adata.shape[1], method='wilcoxon')
+sc.pl.rank_genes_groups_dotplot(adata, n_genes=1)
 # %%
-
+sc.pl.umap(adata, color=['mafaa'])
+sc.pl.umap(adata, color=['clusters'])
 # %%
 
 # %%
