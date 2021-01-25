@@ -1,4 +1,4 @@
-__authors__ = 'fernandes Dec 2020'
+__authors__ = 'fernandes Jan 2021'
 # TODO finish helper class. Add metadata possibility
 
 import pandas as pd
@@ -12,7 +12,7 @@ def load_samples(
         cache=False):
     '''
     """[summary]
-    loads list of samples
+    loads list of samples. Different methods can be used to load data
     Returns:
     Anndata [list]: [adds batch number automatically based on sample order]
     """
