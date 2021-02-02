@@ -55,8 +55,7 @@ def load_samples(
             print(data)
             data.obs['batch'] = n
             samples.append(data)
-            print('loading with read_mtx:\
-             check that gene names are recognized')
+            print('loading with read_mtx:check that gene names are recognized')
     print('loading data finished')
     return samples
 
