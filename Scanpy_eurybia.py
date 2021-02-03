@@ -241,6 +241,18 @@ adata.var['mt'] = adata.var_names.str.startswith('mt')
 sc.pp.calculate_qc_metrics(
     adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
 
+# annotate the group of ribosomal genes as 'rps'
+adata.var['rps'] = adata.var_names.str.startswith('rps')
+sc.pp.calculate_qc_metrics(
+    adata, qc_vars=['rps'], percent_top=None, log1p=False, inplace=True)
+
+
+
+# annotate the group of hemoglobin genes as 'hb'
+adata.var['hb'] = adata.var_names.str.startswith('hb')
+sc.pp.calculate_qc_metrics(
+    adata, qc_vars=['hb'], percent_top=None, log1p=False, inplace=True)
+
 # %%
 sc.pl.violin(adata, ['n_genes_by_counts', 'total_counts', 'pct_counts_mt'],
              jitter=0.3, multi_panel=True, save='_counts.png')
@@ -289,6 +301,15 @@ adata = adata[adata.obs.total_counts <20000, :]
 
 # remove cells with high mitochondrial content
 adata = adata[adata.obs.pct_counts_mt < 10, :]
+
+# remove ribosomal content
+adata = adata[adata.obs.pct_counts_rps < 10, :]
+adata = adata[adata.obs.pct_counts_rps > 0, :]
+
+# remove hemoglobin content
+adata = adata[adata.obs.pct_counts_hb < 10, :]
+adata = adata[adata.obs.pct_counts_hb > 0, :]
+
 adata
 
 # %%
@@ -519,8 +540,8 @@ sc.tl.rank_genes_groups(
     groupby='clusters',
     n_genes=rgcs.shape[1],
     method='wilcoxon')
-
-sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=2,dot_min=0.1, standard_scale='var', save='rank_genes_rgcs.png')
+# %%
+sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1,dot_min=0.3, standard_scale='var', save='rank_genes_rgcs.png')
 
 # %%
 
