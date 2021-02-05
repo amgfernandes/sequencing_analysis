@@ -84,16 +84,15 @@ folder_with_data='/home/fernandes/RGC_scRNAseq_analysis/adult/' \
 # folder_with_data = '/home/fernandes/RGC_scRNAseq_analysis/larva/' \
 #     'D_rerio.GRCz11.102/'
 
-# seq_data=load_samples(data_location=folder_with_data,
-# load_method=sc.read_10x_mtx,samplelist=data_list)
+
 seq_data = load_samples(data_location=folder_with_data,
                         load_method=sc.read_mtx, samplelist=data_list)
 seq_helper = Sequencing(seqdata=seq_data)
 
 '''remove a set of genes True or False'''
-remove=False
+remove=True
 if remove:
-    print('Removing set of genes given as a list')
+    print('Removing set of genes class given as a list')
     seq_data_filtered = seq_helper.remove_gene_list(seq_data, IEG_list)
 else:
     seq_data_filtered=seq_data
@@ -169,6 +168,7 @@ list_of_genes = list(adata.var_names)
 # ax.set_ylim((0.5, 2000))
 # plt.savefig(folder_with_data_plot+'/library saturation.png')
 
+
 # %%
 ''''The vast majority of “cells” have only a few UMI detected.
 Those are empty droplets. 10x claims to have cell capture rate of up to 65%,
@@ -186,7 +186,7 @@ fig, ax = plt.subplots(figsize=(10, 7))
 
 # for adult: 200000
 # for larva : 20000
-expected_num_cells=30000
+expected_num_cells=65000
 
 ax.loglog(knee, range(len(knee)), label="kallisto", linewidth=5, color="k")
 ax.axvline(x=knee[expected_num_cells], linewidth=3, color="g")
@@ -214,7 +214,7 @@ print (adata)
 #Based on kneeplot. Remove empty droplets
 sc.pp.filter_cells(adata, min_counts=knee[expected_num_cells])
 #Minimum number of genes expressed required for a cell to pass filtering.
-sc.pp.filter_cells(adata, min_genes=450) #200
+sc.pp.filter_cells(adata, min_genes=200) #200
 #Minimum number of cells expressed required for a gene to pass filtering.
 sc.pp.filter_genes(adata, min_cells=25)
 
@@ -247,7 +247,6 @@ sc.pp.calculate_qc_metrics(
     adata, qc_vars=['rps'], percent_top=None, log1p=False, inplace=True)
 
 
-
 # annotate the group of hemoglobin genes as 'hb'
 adata.var['hb'] = adata.var_names.str.startswith('hb')
 sc.pp.calculate_qc_metrics(
@@ -263,6 +262,8 @@ sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt',
               save='pct_counts_mt.png')
 sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',
               save='n_genes_by_counts.png')
+
+             
 # %%
 '''Predict doublets'''
 """
@@ -299,16 +300,17 @@ be lower.'''
 adata = adata[adata.obs.n_genes_by_counts < 4000, :]
 adata = adata[adata.obs.total_counts <20000, :]
 
+
 # remove cells with high mitochondrial content
 adata = adata[adata.obs.pct_counts_mt < 10, :]
 
-# remove ribosomal content
-adata = adata[adata.obs.pct_counts_rps < 10, :]
-adata = adata[adata.obs.pct_counts_rps > 0, :]
+# # remove ribosomal content
+# adata = adata[adata.obs.pct_counts_rps < 10, :]
+# adata = adata[adata.obs.pct_counts_rps > 0, :]
 
-# remove hemoglobin content
-adata = adata[adata.obs.pct_counts_hb < 10, :]
-adata = adata[adata.obs.pct_counts_hb > 0, :]
+# # remove hemoglobin content
+# adata = adata[adata.obs.pct_counts_hb < 10, :]
+# adata = adata[adata.obs.pct_counts_hb > 0, :]
 
 adata
 
@@ -336,6 +338,12 @@ plt.savefig(folder_with_data_plot+'/mt_distplot.png')
 
 
 # %%
+plt.figure()
+sns.set_style("whitegrid")
+sns.distplot(adata.var['n_cells'], kde=False)
+sns.despine()
+plt.savefig(folder_with_data_plot+'/n_cells.png')
+# %%
 
 sc.pp.normalize_total(adata, target_sum=1e4)
 
@@ -346,7 +354,7 @@ sc.pp.log1p(adata)
 
 # %%
 '''Identify highly-variable genes.'''
-sc.pp.highly_variable_genes(adata, n_top_genes=2000)
+sc.pp.highly_variable_genes(adata, n_top_genes=2100)
 print("Highly variable genes: %d"%sum(adata.var.highly_variable))
 
 # %%:
@@ -414,6 +422,8 @@ sc.tl.leiden(adata_corr, key_added='clusters', resolution=1)
 
 
 # %%:
+
+# Optional
 '''Embedding the neighborhood graph
 We suggest embedding the graph in two dimensions using UMAP
 (McInnes et al., 2018), see below. It is potentially more faithful to the
@@ -494,23 +504,24 @@ rcParams['figure.figsize'] = 20,20
 sc.pl.umap(adata_corr, color=['clusters'], legend_loc='on data',
 save='_plot_clusters_to_select_RGCs.png',s=30)
 # %%
-sc.pl.dotplot(adata_corr, var_names=['robo2', 'isl2b', 'rbpms2b'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_RGCs.png')
-sc.pl.dotplot(adata_corr, var_names=['rlbp1a', 'apoeb'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_Muller.png')
-sc.pl.dotplot(adata_corr, var_names=['vsx1'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_bipolar.png')
-sc.pl.dotplot(adata_corr, var_names=['gad1b', 'gad2'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_amacrine_markers.png')
-sc.pl.dotplot(adata_corr, var_names=['pde6c'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_photoreceptors.png')
-sc.pl.dotplot(adata_corr, var_names=['cldn19'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_endothelial.png')
-#sc.pl.violin(adata_corr, keys=['robo2', 'isl2b', 'rbpms2b'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_RGCs.png')
+sc.pl.dotplot(adata_corr, var_names=['robo2', 'isl2b', 'rbpms2b'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_RGCs.png', color_map='Blues')
+sc.pl.dotplot(adata_corr, var_names=['rlbp1a', 'apoeb'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_Muller.png', color_map='Blues')
+sc.pl.dotplot(adata_corr, var_names=['vsx1'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_bipolar.png', color_map='Blues')
+sc.pl.dotplot(adata_corr, var_names=['gad1b', 'gad2'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_amacrine_markers.png', color_map='Blues')
+sc.pl.dotplot(adata_corr, var_names=['pde6c'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_photoreceptors.png', color_map='Blues')
+sc.pl.dotplot(adata_corr, var_names=['cldn19'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_endothelial.png', color_map='Blues')
+sc.pl.violin(adata_corr, keys=['robo2', 'isl2b', 'rbpms2b'], groupby='clusters', figsize=(10, 10), save='clusters_to_select_RGCs.png', color_map='Blues')
 
 # %%
 '''Remove clusters that are not neurons. Based on low expression of 'isl2b', 'rbpms2b and other markers and batch effect'''
-rgcs= adata_corr[~adata_corr.obs['clusters'].isin(['8','7','40','21','32','22', '38','32','36','20','14','1','25','41']),:]
+rgcs= adata_corr[~adata_corr.obs['clusters'].isin(['37','44','45','33','27','43', '22','5', '14', '35',
+'11', '34', '24', '36', '29', '13', '30', '38', '26', '2']),:]
 sc.pl.umap(rgcs, color=['clusters'], legend_loc='on data', save='RGCs_clusters_only.png',s=20)
 # %%
 '''We will need to analyze the variable features for the new dataset and rerun the clustering analysis.'''
 
 '''Identify highly-variable genes.'''
-sc.pp.highly_variable_genes(rgcs, n_top_genes=1992)
+sc.pp.highly_variable_genes(rgcs, n_top_genes=2000)
 print("Highly variable genes: %d"%sum(rgcs.var.highly_variable))
 
 
@@ -541,7 +552,18 @@ sc.tl.rank_genes_groups(
     n_genes=rgcs.shape[1],
     method='wilcoxon')
 # %%
-sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1,dot_min=0.3, standard_scale='var', save='rank_genes_rgcs.png')
+'''Filters out genes based on fold change and fraction of genes expressing the
+ gene within and outside the groupby (cluster) categories.'''
+
+sc.tl.filter_rank_genes_groups(rgcs, min_fold_change=1,
+                                min_in_group_fraction=0.25,
+                                max_out_group_fraction=0.5)
+sc.pl.rank_genes_groups(rgcs, key='rank_genes_groups_filtered', ncols=3,
+                        save='_filtered.png')
+
+# %%
+sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1, dot_min=0.0,
+key='rank_genes_groups_filtered', save='rank_genes_rgcs.png',color_map='Blues')
 
 # %%
 
@@ -566,7 +588,7 @@ sc.pl.umap(rgcs, color=['mafaa', 'eomesa', 'tbr1b'],
 # %%
 
 sc.pl.dotplot(rgcs, var_names=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
-                                'id2b', 'tbx20', 'onecut1'],
+                                'id2b', 'tbx20', 'onecut1'], color_map='Blues',
               groupby='clusters', save='selected_genes.png', figsize=(8, 10))
 # %%
 sc.pl.heatmap(rgcs, var_names=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
@@ -581,13 +603,13 @@ sc.pl.umap(
         color_map='viridis',
         save='_selected_genes.png', s=30)
 # %%
-cluster_to_check = '28'
+cluster_to_check = '30'
 clust_look = rgcs[rgcs.obs['clusters'].values.isin([cluster_to_check])]
 clust_look.obs['cluster_to_check'] = cluster_to_check
 
 
 # %%
-sc.tl.leiden(clust_look, key_added='clusters',resolution=0.8)
+sc.tl.leiden(clust_look, key_added='clusters',resolution=1)
 sc.pl.umap(clust_look, color='clusters')
 # %%
 sc.tl.dendrogram(clust_look, groupby='clusters')
@@ -596,12 +618,19 @@ sc.tl.rank_genes_groups(
     groupby='clusters',
     n_genes=clust_look.shape[1],
     method='wilcoxon')
-sc.pl.rank_genes_groups_dotplot(clust_look, n_genes=1)
+ 
+sc.tl.filter_rank_genes_groups(clust_look, min_fold_change=1,
+                                min_in_group_fraction=0.5,
+                                max_out_group_fraction=.5)
+sc.pl.rank_genes_groups(clust_look, key='rank_genes_groups_filtered', ncols=3,
+                        save='cluster '+ str(cluster_to_check)+'.png')                                   
+sc.pl.rank_genes_groups_dotplot(clust_look, key='rank_genes_groups_filtered',
+save='cluster '+ str(cluster_to_check)+'.png',n_genes=1, dot_min=0.0)
 # %%
 sc.pl.dotplot(clust_look, var_names=['mafaa', 'epha7',
                                      'id2b'],
               groupby='clusters', save='selected_genes_subcluster.png',
-              figsize=(8, 8))
+              figsize=(8, 8), color_map='Blues')
 
 # %%
 marker_genes_dict = {'Prey': ['epha7', 'id2b', 'mafaa'],
@@ -609,23 +638,23 @@ marker_genes_dict = {'Prey': ['epha7', 'id2b', 'mafaa'],
                     'Other markers': ['tbr1b', 'onecut1', 'shisa9b']}
 dp = sc.pl.dotplot(rgcs, marker_genes_dict, groupby='clusters', dendrogram=True,
               figsize=(10, 10), save='_marker_genes.png', dot_max=0.5,
-              dot_min=0.05, standard_scale='var')
+              dot_min=0.0, standard_scale='var', color_map='Blues')
 
 # %%
 dp2 = sc.pl.dotplot(rgcs, marker_genes_dict, groupby='clusters', dendrogram=True,
               figsize=(10, 10), save='_marker_genes.png', dot_max=0.5,
-              dot_min=0, standard_scale='var', smallest_dot=40, color_map='Blues',)            
+              dot_min=0, standard_scale='var', smallest_dot=40, color_map='Blues')            
 
 # %%
 dp3 = sc.pl.dotplot(rgcs, marker_genes_dict, groupby='clusters', dendrogram='dendrogram_louvain',
               figsize=(10, 10), save='_marker_genes.png', dot_max=0.5,
-              dot_min=0.05, standard_scale='var',
+              dot_min=0.0, standard_scale='var', color_map='Blues',
                 var_group_positions=[(0,1,2), (3,4), (5,6,7)],
-              var_group_labels=['Prey', 'Phototaxis', 'Other markers'],var_group_rotation=0)
+                var_group_labels=['Prey', 'Phototaxis', 'Other markers'],var_group_rotation=0)
 
 # %%
 # 
-ax = sc.pl.tracksplot(clust_look,marker_genes_dict, groupby='leiden')              
+ax = sc.pl.tracksplot(clust_look,marker_genes_dict, groupby='clusters')              
 # %%
 
 sc.pl.umap(rgcs, color=['clusters'], s=15)
