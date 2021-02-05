@@ -563,8 +563,10 @@ sc.pl.rank_genes_groups(rgcs, key='rank_genes_groups_filtered', ncols=3,
 
 # %%
 sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1, dot_min=0.0,
-key='rank_genes_groups_filtered', save='rank_genes_rgcs.png',color_map='Blues')
+key='rank_genes_groups_filtered', save='rank_genes_rgcs.png',color_map='Blues', standard_scale='var')
 
+sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1, dot_min=0.0,
+key='rank_genes_groups_filtered', save='rank_genes_rgcs_2 genes.png',color_map='Blues', standard_scale='var')
 # %%
 
 '''Make a dataframe with genes per cluster'''
