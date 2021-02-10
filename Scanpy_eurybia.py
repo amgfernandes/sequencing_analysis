@@ -26,13 +26,13 @@ sc.logging.print_header()
 sc.settings.set_figure_params(dpi=300, facecolor='white')
 # %%:
 '''The file that will store the analysis results'''
+
 # results_file = '/home/fernandes/sample_data/scanpy_test.h5ad'
 
 results_file = '/home/fernandes/RGC_scRNAseq_analysis/\
 adult/D_rerio.GRCz11.102.h5ad'
 
-#results_file = '/home/fernandes/RGC_scRNAseq_analysis/\
-#larva/D_rerio.GRCz11.102.h5ad'
+#results_file = '/home/fernandes/RGC_scRNAseq_analysis/larva/D_rerio.GRCz11.102.h5ad'
 
 # Read in the count matrix into an `AnnData
 # <https://anndata.readthedocs.io/en/latest/anndata.AnnData.html>`__ object,
@@ -263,7 +263,6 @@ sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt',
 sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts',
               save='n_genes_by_counts.png')
 
-             
 # %%
 '''Predict doublets'''
 """
@@ -555,17 +554,17 @@ sc.tl.rank_genes_groups(
 '''Filters out genes based on fold change and fraction of genes expressing the
  gene within and outside the groupby (cluster) categories.'''
 
-sc.tl.filter_rank_genes_groups(rgcs, min_fold_change=1,
+sc.tl.filter_rank_genes_groups(rgcs, min_fold_change=1.5,
                                 min_in_group_fraction=0.25,
                                 max_out_group_fraction=0.5)
 sc.pl.rank_genes_groups(rgcs, key='rank_genes_groups_filtered', ncols=3,
                         save='_filtered.png')
 
 # %%
-sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1, dot_min=0.0,
+sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1, dot_min=0.1,
 key='rank_genes_groups_filtered', save='rank_genes_rgcs.png',color_map='Blues', standard_scale='var')
 
-sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=1, dot_min=0.0,
+sc.pl.rank_genes_groups_dotplot(rgcs, n_genes=2, dot_min=0.0,
 key='rank_genes_groups_filtered', save='rank_genes_rgcs_2 genes.png',color_map='Blues', standard_scale='var')
 # %%
 
@@ -582,16 +581,16 @@ groups = result['names'].dtype.names
 pd.DataFrame(
     {group + '_' + key[:1]: result[key][group]
     for group in groups for key in ['names', 'pvals']}).head(5)
-  
+
 # %%
 sc.pl.umap(rgcs, color=['mafaa', 'eomesa', 'tbr1b'],
-           save='selected_genes.png', color_map='viridis', s=30)
+           save='selected_genes.png', color_map='viridis', s=30 )
 
 # %%
 
 sc.pl.dotplot(rgcs, var_names=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
                                 'id2b', 'tbx20', 'onecut1'], color_map='Blues',
-              groupby='clusters', save='selected_genes.png', figsize=(8, 10))
+              groupby='clusters', save='selected_genes.png', figsize=(8, 10), standard_scale='var')
 # %%
 sc.pl.heatmap(rgcs, var_names=['eomesa', 'tbr1b', 'mafaa', 'neurod1', 'epha7',
                                 'id2b', 'tbx20'],
@@ -627,12 +626,12 @@ sc.tl.filter_rank_genes_groups(clust_look, min_fold_change=1,
 sc.pl.rank_genes_groups(clust_look, key='rank_genes_groups_filtered', ncols=3,
                         save='cluster '+ str(cluster_to_check)+'.png')                                   
 sc.pl.rank_genes_groups_dotplot(clust_look, key='rank_genes_groups_filtered',
-save='cluster '+ str(cluster_to_check)+'.png',n_genes=1, dot_min=0.0)
+save='cluster '+ str(cluster_to_check)+'.png',n_genes=1, dot_min=0.0, standard_scale='var')
 # %%
 sc.pl.dotplot(clust_look, var_names=['mafaa', 'epha7',
                                      'id2b'],
-              groupby='clusters', save='selected_genes_subcluster.png',
-              figsize=(8, 8), color_map='Blues')
+              groupby='clusters', save='cluster '+ str(cluster_to_check)+'.png',
+              figsize=(8, 8), color_map='Blues', standard_scale='var')
 
 # %%
 marker_genes_dict = {'Prey': ['epha7', 'id2b', 'mafaa'],
@@ -656,12 +655,36 @@ dp3 = sc.pl.dotplot(rgcs, marker_genes_dict, groupby='clusters', dendrogram='den
 
 # %%
 # 
+\
 ax = sc.pl.tracksplot(clust_look,marker_genes_dict, groupby='clusters')              
 # %%
 
 sc.pl.umap(rgcs, color=['clusters'], s=15)
 # %%
+'''Get annotation from Biomart'''
+annot = sc.queries.biomart_annotations(
+        "drerio",
+        ["ensembl_gene_id", "description", "external_gene_name","go"],
+    ).set_index("ensembl_gene_id")
+annot    
 
 # %%
 
+'''get only transcription factors by GO ID "GO:0003700"'''
+
+TFs=annot[annot.go=="GO:0003700"]
+
+
+# %%.
+
+TFs_dict=TFs.external_gene_name
+a=rgcs.var_names #gene names on rgcs anndata
+b=TFs.external_gene_name.values #gene names on TFs retrieved from Biomart
+TFs_check=set(a) & set(b) #get overlap of both lists
+
+dp4 = sc.pl.dotplot(rgcs, list(TFs_check), groupby='clusters', dendrogram='dendrogram_louvain', save='TFs_only.png',color_map='Blues')
+
+
+# %%
+dp5 = sc.pl.dotplot(rgcs, list(TFs_check), groupby='clusters', dendrogram='dendrogram_louvain', save='TFs_only.png',color_map='Blues')
 # %%
