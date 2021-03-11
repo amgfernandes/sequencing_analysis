@@ -183,7 +183,7 @@ More sophisticated method exist (e.g. see emptyDrops in DropletUtils) '''
 knee = np.sort((np.array(adata.X.sum(axis=1))).flatten())[::-1]
 fig, ax = plt.subplots(figsize=(10, 7))
 
-# for adult: 200000
+# for adult: 65000
 # for larva : 20000
 expected_num_cells = 65000
 
